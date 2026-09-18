@@ -1,0 +1,25 @@
+# =====================================================================
+# Dependencias del Proyecto Capstone: Reddit Hate Speech Classifier
+# Universidad Privada del Norte (UPN)
+# =====================================================================
+
+# Procesamiento y Almacenamiento Columnar de Datos
+pandas>=2.0.0
+pyarrow>=15.0.0
+
+# Machine Learning y Modelado Estadístico
+scikit-learn>=1.4.0
+joblib>=1.3.0
+
+# Deep Learning y Procesamiento de Lenguaje Natural (NLP)
+torch>=2.0.0
+transformers>=4.40.0
+sentencepiece>=0.2.0
+
+# Visualización de Datos y Análisis Gráfico
+matplotlib>=3.8.0
+seaborn>=0.13.0
+plotly>=5.20.0
+
+# Interfaz Web y Dashboard Interactivo
+streamlit>=1.35.0

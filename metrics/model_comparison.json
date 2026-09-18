@@ -1,0 +1,42 @@
+{
+    "kpis_description": {
+        "fnr_odio": "Tasa de Falsos Negativos de Odio: casos de odio que el modelo no detectó (menor es mejor)",
+        "macro_f1": "Media no ponderada de F1 entre clases (criterio principal de selección)"
+    },
+    "test_partition_size": 11,
+    "results": [
+        {
+            "model_name": "Línea Base (Reglas/Lexicón)",
+            "accuracy": 0.9090909090909091,
+            "macro_f1": 0.8962962962962964,
+            "precision_odio": 1.0,
+            "recall_odio": 0.6666666666666666,
+            "fnr_odio": 0.3333333333333333,
+            "f1_odio": 0.8,
+            "f1_ofensivo": 1.0,
+            "f1_neutro": 0.8888888888888888
+        },
+        {
+            "model_name": "ML Clásico (TF-IDF + LogisticRegression)",
+            "accuracy": 0.5454545454545454,
+            "macro_f1": 0.48148148148148145,
+            "precision_odio": 0.3333333333333333,
+            "recall_odio": 0.6666666666666666,
+            "fnr_odio": 0.3333333333333333,
+            "f1_odio": 0.4444444444444444,
+            "f1_ofensivo": 1.0,
+            "f1_neutro": 0.0
+        },
+        {
+            "model_name": "Transformer (bert-tiny)",
+            "accuracy": 0.2727272727272727,
+            "macro_f1": 0.24444444444444446,
+            "precision_odio": 0.2857142857142857,
+            "recall_odio": 0.6666666666666666,
+            "fnr_odio": 0.3333333333333333,
+            "f1_odio": 0.4,
+            "f1_ofensivo": 0.3333333333333333,
+            "f1_neutro": 0.0
+        }
+    ]
+}

@@ -1,0 +1,12 @@
+{
+    "best_model_name": "Línea Base (Reglas/Lexicón)",
+    "target_classes": [
+        "Odio",
+        "Ofensivo",
+        "Neutro"
+    ],
+    "macro_f1": 0.8962962962962964,
+    "accuracy": 0.9090909090909091,
+    "fnr_odio": 0.3333333333333333,
+    "model_file": "best_model.pkl"
+}

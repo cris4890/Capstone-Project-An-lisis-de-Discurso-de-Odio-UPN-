@@ -1,0 +1,78 @@
+# =====================================================================
+# Git Ignore - Proyecto Capstone Reddit Hate Speech Classifier
+# =====================================================================
+
+# Entornos virtuales de Python
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Archivos compilados y bytecode de Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Distribución y empaquetado
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Archivos de caché de Hugging Face y modelos pesados no versionados
+.cache/
+hf_cache/
+*.safetensors
+*.bin
+
+# Asegurar que se versionen los modelos serializados y metadatos del proyecto
+!models/best_model.pkl
+!models/model_baseline.pkl
+!models/model_tfidf.pkl
+!models/best_model_metadata.json
+
+# Logs y bases de datos temporales
+*.log
+*.sqlite3
+
+# Variables de entorno y secretos
+.env
+.env.local
+.env.*.local
+
+# Configuraciones de editores e IDEs
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.project
+.pydevproject
+
+# Archivos del sistema operativo
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Configuración local de Streamlit
+.streamlit/secrets.toml
