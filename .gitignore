@@ -76,3 +76,9 @@ desktop.ini
 
 # Configuración local de Streamlit
 .streamlit/secrets.toml
+
+# Evidencias y ejecuciones locales; pueden contener datos restringidos
+runs/
+private/
+.pytest_cache/
+data/demo_seguro.*

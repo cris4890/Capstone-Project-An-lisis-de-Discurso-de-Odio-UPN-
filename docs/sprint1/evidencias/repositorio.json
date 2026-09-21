@@ -1,0 +1,15 @@
+{
+  "branch": "codex/sprint1-entrega",
+  "base_commit": "1b1707f363d8156e0b15adebd98c94ef1ba91233",
+  "configured_remote": "https://github.com/cris4890/Capstone-Project-An-lisis-de-Discurso-de-Odio-UPN-.git",
+  "sprint_start": "2026-09-14",
+  "sprint_end": "2026-09-20",
+  "timezone": "America/Lima",
+  "academic_due_date": null,
+  "ignored_paths_verified": ["private/history.sqlite3", "runs/sprint1_entrega/run.json", ".env", ".streamlit/secrets.toml"],
+  "remote_publication_verified": false,
+  "remote_ci_execution_verified": false,
+  "branch_protection_verified": false,
+  "final_commit_reference": "Consultar git log en la rama indicada; este archivo se incluye en la entrega versionada.",
+  "preexisting_binary_changes": "Los cambios previos en data, metrics y models se conservan fuera del commit de esta entrega."
+}

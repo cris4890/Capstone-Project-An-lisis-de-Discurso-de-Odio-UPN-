@@ -8,7 +8,11 @@ Contiene las arquitecturas personalizadas para el proyecto Capstone:
 - TextDataset: Dataset compatible con PyTorch DataLoader.
 """
 
+from __future__ import annotations
+
 import copy
+import json
+from pathlib import Path
 import logging
 import re
 from typing import Any, Dict, List, Optional, Union
@@ -20,7 +24,7 @@ import torch.nn as nn
 from sklearn.utils.class_weight import compute_class_weight
 from torch.optim import AdamW
 from torch.utils.data import DataLoader, Dataset
-from transformers import BertForSequenceClassification, BertTokenizer
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 logger = logging.getLogger("ModelClasses")
 
@@ -139,7 +143,7 @@ class RuleBasedClassifier:
 class TextDataset(Dataset):
     """Dataset de PyTorch para tokenización bajo demanda."""
 
-    def __init__(self, texts: List[str], labels: Optional[List[int]], tokenizer: BertTokenizer, max_len: int = 128):
+    def __init__(self, texts: List[str], labels: Optional[List[int]], tokenizer: Any, max_len: int = 128):
         self.texts = list(texts)
         self.labels = labels
         self.tokenizer = tokenizer
@@ -165,16 +169,16 @@ class TextDataset(Dataset):
 
 class TransformerClassifier:
     """
-    Envoltorio modular para entrenamiento y predicción con Transformers ligeros (bert-tiny).
+    Ajuste fino y predicción con un Transformer multilingüe.
     Implementa early checkpointing según el desempeño en validación.
     """
 
     def __init__(
         self,
-        model_name: str = "prajjwal1/bert-tiny",
+        model_name: str = "FacebookAI/xlm-roberta-base",
         num_epochs: int = 8,
         batch_size: int = 8,
-        lr: float = 1e-4,
+        lr: float = 2e-5,
     ) -> None:
         self.model_name = model_name
         self.num_epochs = num_epochs
@@ -183,14 +187,15 @@ class TransformerClassifier:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         logger.info("Inicializando Tokenizer y Modelo Transformer (%s) en dispositivo: %s", self.model_name, self.device)
-        self.tokenizer = BertTokenizer.from_pretrained(self.model_name)
-        self.model = BertForSequenceClassification.from_pretrained(
+        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+        self.model = AutoModelForSequenceClassification.from_pretrained(
             self.model_name,
             num_labels=len(TARGET_CLASSES),
             id2label=ID_TO_LABEL,
             label2id=LABEL_TO_ID,
         )
         self.model.to(self.device)
+        self.is_fitted = False
 
     def fit(
         self,
@@ -202,6 +207,8 @@ class TransformerClassifier:
         """Entrena el modelo con ajuste fino y retiene el mejor estado evaluado en validación."""
         from sklearn.metrics import f1_score
 
+        if self.num_epochs < 1:
+            raise ValueError("Se requiere al menos una época de entrenamiento.")
         y_train_ids = [LABEL_TO_ID[label] for label in y_train]
         y_val_ids = [LABEL_TO_ID[label] for label in y_val]
 
@@ -270,24 +277,66 @@ class TransformerClassifier:
                 best_state_dict = copy.deepcopy(self.model.state_dict())
 
         self.model.load_state_dict(best_state_dict)
+        self.is_fitted = True
+        self.validation_macro_f1 = float(best_val_macro_f1)
         logger.info("Mejor Macro-F1 en Validación para Transformer: %.4f", best_val_macro_f1)
         return self
 
-    def predict(self, texts: Union[str, pd.Series, List[str], np.ndarray]) -> np.ndarray:
-        """Genera predicciones de texto en formato string ('Odio', 'Ofensivo', 'Neutro')."""
-        if isinstance(texts, str):
-            texts = [texts]
+    def predict_proba(self, texts):
+        if not getattr(self, "is_fitted", False):
+            raise RuntimeError("El Transformer no tiene un ajuste fino verificado.")
+        texts = [texts] if isinstance(texts, str) else list(texts)
+        if not texts:
+            return np.empty((0, len(TARGET_CLASSES)))
         self.model.eval()
-        dataset = TextDataset(list(texts), None, self.tokenizer)
-        loader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False)
-        predictions: List[str] = []
-
+        loader = DataLoader(TextDataset(texts, None, self.tokenizer),
+                            batch_size=self.batch_size, shuffle=False)
+        probabilities = []
         with torch.no_grad():
             for batch in loader:
-                input_ids = batch["input_ids"].to(self.device)
-                attention_mask = batch["attention_mask"].to(self.device)
-                outputs = self.model(input_ids=input_ids, attention_mask=attention_mask)
-                preds = torch.argmax(outputs.logits, dim=1).cpu().numpy()
-                predictions.extend([ID_TO_LABEL[p] for p in preds])
+                inputs = {key: value.to(self.device) for key, value in batch.items()}
+                logits = self.model(**inputs).logits
+                probabilities.extend(torch.softmax(logits, dim=1).cpu().numpy())
+        return np.asarray(probabilities)
 
-        return np.array(predictions)
+    @property
+    def classes_(self):
+        return np.asarray(TARGET_CLASSES)
+
+    def predict(self, texts):
+        return self.classes_[self.predict_proba(texts).argmax(axis=1)]
+
+    def save(self, directory):
+        if not getattr(self, "is_fitted", False):
+            raise RuntimeError("No se puede guardar un modelo sin entrenar.")
+        directory = Path(directory)
+        directory.mkdir(parents=True, exist_ok=True)
+        self.model.save_pretrained(directory, safe_serialization=True)
+        self.tokenizer.save_pretrained(directory)
+        metadata = {"trained": True, "model_name": self.model_name,
+                    "classes": TARGET_CLASSES, "num_epochs": self.num_epochs,
+                    "batch_size": self.batch_size, "lr": self.lr,
+                    "validation_macro_f1": self.validation_macro_f1}
+        (directory / "training_metadata.json").write_text(
+            json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    @classmethod
+    def load(cls, directory):
+        directory = Path(directory)
+        metadata_path = directory / "training_metadata.json"
+        if not metadata_path.is_file():
+            raise FileNotFoundError("No existe un Transformer entrenado en esta ejecución.")
+        meta = json.loads(metadata_path.read_text(encoding="utf-8"))
+        if meta.get("trained") is not True or meta.get("classes") != TARGET_CLASSES:
+            raise ValueError("El checkpoint no acredita entrenamiento o clases compatibles.")
+        obj = cls.__new__(cls)
+        for name in ("model_name", "num_epochs", "batch_size", "lr", "validation_macro_f1"):
+            setattr(obj, name, meta[name])
+        obj.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        obj.tokenizer = AutoTokenizer.from_pretrained(directory, local_files_only=True)
+        obj.model = AutoModelForSequenceClassification.from_pretrained(directory, local_files_only=True)
+        if [obj.model.config.id2label[i] for i in range(3)] != TARGET_CLASSES:
+            raise ValueError("Orden de etiquetas incompatible con el checkpoint.")
+        obj.model.to(obj.device)
+        obj.is_fitted = True
+        return obj
