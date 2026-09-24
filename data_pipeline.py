@@ -39,7 +39,7 @@ DEFAULT_CSV_PATH = DATA_DIR / "corpus_preprocesado.csv"
 DEFAULT_PARQUET_PATH = DATA_DIR / "corpus_preprocesado.parquet"
 
 # Expresiones regulares precompiladas para optimizar el rendimiento en inferencia por lotes
-RE_UNICODE_INVISIBLE = re.compile(r"[\u200b\u200c\u200d\u200e\u200f\ufeff]")
+RE_UNICODE_INVISIBLE = re.compile(r"[\u200b\u200e\u200f\ufeff]")
 RE_NON_BREAKING_SPACES = re.compile(r"[\u00a0\u1680\u2000-\u200a\u202f\u205f\u3000]")
 # Detecta URLs (http, https, www) sin absorber signos de puntuación o paréntesis finales
 RE_URL = re.compile(r"(?:https?://|www\.)\S+?(?=[.,;!?)]*(?:\s|$))", flags=re.IGNORECASE)
@@ -80,6 +80,9 @@ def clean_and_anonymize(text: str) -> str:
 
     # 3. Anonimización de URLs
     cleaned = RE_URL.sub("[URL]", cleaned)
+
+    cleaned = re.sub(r"[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}", "[EMAIL]", cleaned)
+    cleaned = re.sub(r"(?<!\w)\+?\d[\d ()-]{7,}\d(?!\w)", "[PHONE]", cleaned)
 
     # 4. Anonimización de usuarios de Reddit y menciones
     cleaned = RE_USER.sub("[USER]", cleaned)
@@ -573,6 +576,9 @@ def generate_synthetic_data() -> pd.DataFrame:
     # Reordenar columnas para mantener el esquema contractual solicitado
     df = df[["id_comentario", "subreddit", "idioma", "texto_original", "etiqueta"]]
     logger.info("Generados %d registros sintéticos bilingües exitosamente.", len(df))
+    df["origen"] = "sintetico"
+    df["id_hilo"] = df["id_comentario"]
+    df["tipo_contenido"] = "comentario"
     return df
 
 
@@ -599,23 +605,18 @@ def process_and_save(
         logger.info("No se proporcionó DataFrame. Generando datos sintéticos...")
         df = generate_synthetic_data()
 
-    logger.info("Iniciando fase de limpieza y anonimización de texto...")
-    df_processed = df.copy()
-    df_processed["texto_limpio"] = df_processed["texto_original"].apply(clean_and_anonymize)
-
-    # Asegurar que el directorio destino exista
-    csv_path = Path(output_csv)
-    parquet_path = Path(output_parquet)
+    from corpus import prepare_corpus
+    if "origen" not in df.columns:
+        raise ValueError("Declare la procedencia del corpus antes de procesarlo.")
+    df_processed, report = prepare_corpus(df)
+    csv_path, parquet_path = Path(output_csv), Path(output_parquet)
     csv_path.parent.mkdir(parents=True, exist_ok=True)
     parquet_path.parent.mkdir(parents=True, exist_ok=True)
-
-    # 1. Guardar en CSV (formato legible para inspección rápida con UTF-8)
     df_processed.to_csv(csv_path, index=False, encoding="utf-8")
-    logger.info("Archivo CSV guardado en: %s", csv_path.resolve())
-
-    # 2. Guardar en Parquet (almacenamiento columnar optimizado para pipelines de ML)
-    df_processed.to_parquet(parquet_path, index=False, engine="pyarrow")
-    logger.info("Archivo Parquet guardado en: %s", parquet_path.resolve())
+    df_processed.to_parquet(parquet_path, index=False)
+    import json
+    csv_path.with_suffix(".quality.json").write_text(
+        json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
 
     return df_processed
 
@@ -640,13 +641,14 @@ def print_corpus_summary(df: pd.DataFrame) -> None:
     sample_df = df.sample(n=min(5, len(df)), random_state=42)
     for _, row in sample_df.iterrows():
         print(f"[{row['id_comentario']}] ({row['subreddit']} | {row['idioma']} | {row['etiqueta']})")
-        print(f"  ORIGINAL: {row['texto_original']}")
+
         print(f"  LIMPIO  : {row['texto_limpio']}\n")
     print("=" * 70 + "\n")
 
 
 if __name__ == "__main__":
     logger.info("=== Iniciando Pipeline de Datos Capstone Reddit NLP ===")
-    df_final = process_and_save()
+    df_final = process_and_save(output_csv=DATA_DIR / "demo_seguro.csv",
+                                output_parquet=DATA_DIR / "demo_seguro.parquet")
     print_corpus_summary(df_final)
     logger.info("=== Pipeline ejecutado con éxito ===")

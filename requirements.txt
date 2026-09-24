@@ -23,3 +23,7 @@ plotly>=5.20.0
 
 # Interfaz Web y Dashboard Interactivo
 streamlit>=1.35.0
+
+# Identificación de idioma y verificación
+langdetect==1.0.9
+pytest>=8.0

@@ -1,159 +1,95 @@
-# 🛡️ Reddit Hate Speech Classifier — Capstone UPN
+# Clasificación de discurso de odio en comunidades de Reddit
 
-[![Python Version](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue.svg)](https://www.python.org/)
-[![Streamlit](https://img.shields.io/badge/Streamlit-1.40+-FF4500.svg)](https://streamlit.io/)
-[![Scikit-Learn](https://img.shields.io/badge/scikit--learn-1.4+-F7931E.svg)](https://scikit-learn.org/)
-[![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-EE4C2C.svg)](https://pytorch.org/)
-[![Hugging Face](https://img.shields.io/badge/Hugging%20Face-Transformers-yellow.svg)](https://huggingface.co/)
+Prototipo académico de apoyo a revisión humana para el PC4 UPN. Clasifica Odio, Ofensivo y Neutro; compara modelos y registra anotaciones. El corpus incluido es sintético: no acredita resultados sobre Reddit real ni prevalencia por generaciones.
 
-Sistema integral de moderación automática, clasificación multiclas y análisis exploratorio del discurso de odio en comunidades de Reddit (`r/Millennials` y `r/GenZ`), desarrollado para el proyecto de **Capstone - Universidad Privada del Norte (UPN)**.
+## Entrega del Sprint 1
 
----
+[Paquete de entrega y evidencias](docs/sprint1/README.md): plan de desarrollo, Scrum, backlog, DoD, ramas, seguridad y guía del incremento. Periodo 14–20 de septiembre de 2026; fecha académica pendiente.
 
-## 📌 Descripción del Proyecto
+## Instalación y pruebas
 
-Las plataformas sociales albergan diversas dinámicas intergeneracionales donde convergen slang, tensiones sociopolíticas y expresiones polarizantes. Este proyecto implementa un pipeline completo de NLP que:
+En Windows, desde la carpeta del proyecto:
 
-1. **Anonimiza y normaliza** menciones de usuarios (`u/usuario` $\to$ `[USER]`), enlaces (`https://...` $\to$ `[URL]`) y codificación Unicode preservando emojis y signos clave.
-2. **Clasifica** comentarios en tres categorías éticas y de moderación:
-   - 🔴 **Odio (Hate Speech)**: Ataques o deshumanización dirigidos a grupos protegidos (nacionalidad, orientación sexual, raza, religión).
-   - 🟡 **Ofensivo (Toxicity/Insults)**: Agresividad verbal, vulgaridad e insultos directos sin atacar minorías protegidas.
-   - 🟢 **Neutro**: Discusiones constructivas, nostalgia, preguntas informativas o comentarios seguros.
-3. **Compara tres familias de modelos (Hitos PC4)**:
-   - **Modelo 1**: Línea Base Heurística (Lexicón bilingüe y reglas regex).
-   - **Modelo 2**: Machine Learning Clásico (TF-IDF + `LinearSVC` / `LogisticRegression`).
-   - **Modelo 3**: Deep Learning Transformer (Fine-tuning de `prajjwal1/bert-tiny` con PyTorch).
-4. **Despliega un Dashboard Interactivo en Streamlit**: Inferencia en tiempo real en dos columnas, métricas comparativas y análisis visual de comunidades con Plotly Express.
-
----
-
-## 📂 Estructura del Repositorio
-
-```text
-Capstone-/
-├── data/
-│   ├── corpus_preprocesado.csv          # Dataset tabular procesado (UTF-8)
-│   └── corpus_preprocesado.parquet      # Dataset columnar optimizado (PyArrow)
-├── models/
-│   ├── best_model.pkl                   # Modelo serializado campeón para producción
-│   ├── best_model_metadata.json         # Metadatos del modelo ganador
-│   ├── model_baseline.pkl               # Modelo de Línea Base (Reglas/Lexicón)
-│   └── model_tfidf.pkl                  # Pipeline TF-IDF + Clasificador Lineal
-├── metrics/
-│   ├── matrix_baseline.png              # Matriz de confusión: Línea Base
-│   ├── matrix_tfidf.png                 # Matriz de confusión: ML Clásico
-│   ├── matrix_transformer.png           # Matriz de confusión: Transformer BERT-Tiny
-│   └── model_comparison.json            # Reporte de KPIs comparativos (PC4)
-├── model_classes.py                     # Definición modular de estimadores y datasets PyTorch
-├── data_pipeline.py                     # Generación de corpus, anonimización y guardado
-├── train_models.py                      # Partición estratificada, entrenamiento y evaluación
-├── app.py                               # Dashboard web interactivo en Streamlit
-├── requirements.txt                     # Lista de dependencias del entorno
-├── .gitignore                           # Exclusiones de Git (entornos, temporales, cachés)
-└── README.md                            # Documentación general del proyecto
+```powershell
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m pytest -q
+.\.venv\Scripts\python.exe -m streamlit run app.py --server.address 127.0.0.1
 ```
 
----
+El panel usa únicamente ejecuciones completas. Si no se selecciona ninguna, permite una demostración explícita de reglas, con limitaciones de contexto. Nunca reemplaza silenciosamente un modelo faltante por otro.
 
-## 🚀 Guía de Instalación y Ejecución
+## Tres subsistemas y herramienta interna
 
-Sigue estos pasos para configurar y ejecutar el proyecto localmente:
+El sistema principal tiene Clasificación, Reportes e Historial. Reportes contiene evaluación y exploración del corpus. Guardar en Historial está desactivado inicialmente; al activarlo se conserva el texto procesado, fecha, modelo, categoría, tiempo y probabilidad cuando existe en `private/history.sqlite3`. Los registros persisten al reiniciar. No hay aislamiento por usuario ni cifrado; revisar datos personales antes de guardar y mantener uso local.
 
-### 1. Clonar el Repositorio
+Anotación es auxiliar del equipo, fuera de la navegación principal:
 
-```bash
-git clone https://github.com/tu-usuario/capstone-reddit-nlp.git
-cd capstone-reddit-nlp
+```powershell
+.\.venv\Scripts\python.exe -m streamlit run annotation_app.py --server.address 127.0.0.1 --server.port 8502
 ```
 
-### 2. Crear y Activar un Entorno Virtual
+Esta separación no equivale a autenticación.
 
-- **En Windows (PowerShell)**:
-  ```powershell
-  python -m venv venv
-  .\venv\Scripts\Activate.ps1
-  ```
+## Ejecución local de demostración
 
-- **En Linux / macOS (Bash/Zsh)**:
-  ```bash
-  python3 -m venv venv
-  source venv/bin/activate
-  ```
-
-### 3. Instalar Dependencias
-
-```bash
-pip install --upgrade pip
-pip install -r requirements.txt
+```powershell
+.\.venv\Scripts\python.exe train_models.py
 ```
 
----
+Entrena reglas, regresión logística y SVM sobre 72 ejemplos sintéticos, en una carpeta nueva dentro de `runs/`. Selecciona por validación antes de evaluar prueba. Guarda el corpus minimizado, particiones por hilo, modelos, predicciones, errores, métricas por clase y subgrupo, intervalos bootstrap, matrices, casos funcionales y versiones del entorno.
 
-## 🧪 Ejecución de Módulos (Flujo Completo)
+La separación busca 70/15/15 aproximadamente, con hilos indivisibles y presencia de las tres clases. No estima prevalencia y puede rechazar corpus con pocos hilos por clase.
 
-### Paso A: Preprocesamiento y Generación de Datos (Opcional)
-Si deseas regenerar el corpus sintético bilingüe y ejecutar la anonimización:
-```bash
-python data_pipeline.py
+Para incluir el Transformer multilingüe:
+
+```powershell
+.\.venv\Scripts\python.exe train_models.py --include-transformer --epochs 3
 ```
 
-### Paso B: Reentrenamiento y Evaluación de Modelos (Hitos PC4)
-Ejecuta la partición estratificada (70% Train, 15% Val, 15% Test), entrena los 3 modelos, calcula los KPIs y genera las matrices de confusión:
-```bash
-python train_models.py
+Esta opción descarga XLM-RoBERTa y requiere recursos de entrenamiento considerablemente mayores. El checkpoint se guarda con su tokenizador y metadatos; el panel lo carga exclusivamente desde esa carpeta local. La prueba automatizada usa una arquitectura diminuta inicializada localmente para verificar el ajuste y la persistencia: no demuestra calidad del modelo multilingüe real.
+
+## Datos reales y anotación
+
+1. Obtener y revisar la autorización o licencia antes de adquirir datos. Este repositorio no extrae datos de Reddit.
+2. Guardar entrada y evidencia en `private/`. Preparar un manifiesto a partir de `docs/procedencia.example.json` con valores reales.
+3. Importar el corpus a una ruta nueva:
+
+```powershell
+.\.venv\Scripts\python.exe corpus.py private/entrada.csv private/corpus_v1.csv --manifest private/procedencia.json
 ```
 
-### Paso C: Iniciar la Aplicación Web (Streamlit)
-Lanza el panel de moderación y visualización interactiva:
-```bash
-streamlit run app.py
+La entrada requiere `subreddit`, `id_hilo`, `tipo_contenido`, `origen` y `texto_original` o `texto_limpio`; para datos reales también `fecha`. Orígenes: `reddit_autorizado`, `licenciado` o `sintetico`. Se generan identificadores internos y se conservan solo campos permitidos. Para un corpus de otro dominio, revisar antes la delimitación del proyecto.
+
+4. Resolver casos marcados `revision_idioma`, documentar quién revisó idioma y privacidad y fijar esa versión del archivo antes de anotar. El enmascaramiento automático no garantiza anonimato.
+5. Abrir la herramienta interna `annotation_app.py` y cargar **exactamente ese archivo** en Anotación. Dos evaluadores trabajan de manera independiente; un tercero adjudica. El registro se guarda en `private/annotations.sqlite3`. Consultar `docs/manual_anotacion.md`.
+6. Entrenar con el mismo archivo original que se cargó para anotar (su hash identifica las anotaciones, no utilizar el CSV exportado con otro hash):
+
+```powershell
+.\.venv\Scripts\python.exe train_models.py --data private/corpus_v1.csv --manifest private/procedencia.json --annotation-db private/annotations.sqlite3 --include-transformer
 ```
 
-Abre tu navegador en: [http://localhost:8501](http://localhost:8501)
+El entrenamiento recupera las etiquetas finales de la base de anotación. El registro de autorización es una comprobación documental, no una verificación jurídica. No publicar este panel con datos restringidos: está previsto para uso local y no autentica códigos de evaluador.
 
----
+## Archivos y evidencia
 
-## 📊 Resumen Comparativo de Modelos (Evaluación Test Set)
+- `corpus.py`: validación, detección de idioma y minimización.
+- `annotations.py`: anotación, adjudicación, kappa y V de Aiken.
+- `experiment.py`: particiones, métricas, bootstrap y subgrupos.
+- `train_models.py`: ejecuciones independientes y selección por validación.
+- `model_registry.py`: carga explícita de artefactos.
+- `app.py`: Clasificación, Reportes (incluye corpus) e Historial.
+- `annotation_app.py`: herramienta interna de anotación separada.
+- `history_store.py`: historial local de consultas guardadas voluntariamente.
+- `maintenance.py`: respaldo y restauración verificables de SQLite.
+- `tests/`: pruebas automatizadas y casos funcionales propuestos.
+- `docs/cumplimiento_pc4.md`: requisitos implementados y evidencia pendiente.
 
-Evaluación realizada sobre exactamente la misma partición de prueba no vista ($N = 11$, estratificado con semilla fija `42`):
+Los resultados históricos se mantienen en sus carpetas anteriores; no son la evidencia de una nueva evaluación. `runs/` y `private/` están excluidos de Git. Cada ejecución registra `requirements.lock.txt`; instalarlo en un entorno compatible permite recuperar las versiones probadas.
 
-| Modelo | Accuracy | Macro-F1 ★ | Precisión (Odio) | Recall (Odio) | FNR (Odio) ⚠️ | F1 (Odio) | F1 (Ofensivo) | F1 (Neutro) |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Línea Base (Reglas/Lexicón)** 🏆 | **90.91%** | **89.63%** | **100.00%** | **66.67%** | **33.33%** | **80.00%** | **100.00%** | **88.89%** |
-| **ML Clásico (TF-IDF + LR/SVC)** | 54.55% | 48.15% | 33.33% | 66.67% | 33.33% | 44.44% | 100.00% | 0.00% |
-| **Transformer (`bert-tiny`)** | 27.27% | 24.44% | 28.57% | 66.67% | 33.33% | 40.00% | 33.33% | 0.00% |
+## Referencias de implementación
 
-> **Nota sobre KPIs de Moderación**:
-> - **Macro-F1 (Criterio Rector)**: Evalúa el balance equitativo entre las tres clases sin sesgo de frecuencias.
-> - **FNR Odio (False Negative Rate)**: $FNR = 1.0 - \text{Recall}$. Métrica crítica de seguridad que mide qué proporción de contenido de odio escapó a los filtros del modelo.
+- [XLM-RoBERTa](https://huggingface.co/FacebookAI/xlm-roberta-base)
+- [Persistencia de modelos Transformers](https://huggingface.co/docs/transformers/main_classes/model)
 
----
-
-## 💻 Uso en Producción / Inferencia con Python
-
-Puedes cargar el modelo entrenado y clasificar nuevos textos directamente:
-
-```python
-import joblib
-from data_pipeline import clean_and_anonymize
-
-# 1. Cargar el modelo ganador de producción
-model = joblib.load("models/best_model.pkl")
-
-# 2. Entrada cruda con menciones y enlaces
-comentario = "Todos esos inmigrantes deben ser expulsados u/usuario https://noticia.com"
-
-# 3. Anonimizar y clasificar
-comentario_limpio = clean_and_anonymize(comentario)
-prediccion = model.predict([comentario_limpio])[0]
-
-print(f"Predicción: {prediccion}")  # Salida: 'Odio'
-```
-
----
-
-## 👥 Créditos Académicos
-
-- **Institución**: Universidad Privada del Norte (UPN)
-- **Proyecto**: Capstone — Clasificación Automática de Discurso de Odio en Reddit
-- **Entorno**: Python 3.10+ | Scikit-Learn | PyTorch | Hugging Face Transformers | Streamlit
+La inclusión de herramientas no sustituye la autorización, el muestreo probabilístico, la anotación humana, el juicio de especialistas o la validación experimental establecidos en el Word.

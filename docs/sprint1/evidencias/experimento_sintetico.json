@@ -1,0 +1,97 @@
+{
+  "created_at": "2026-09-21T02:36:57.332140+00:00",
+  "origin": "sintetico",
+  "seed": 42,
+  "split_sizes": {
+    "train": 50,
+    "validation": 11,
+    "test": 11
+  },
+  "selection_criterion": "validation_macro_f1",
+  "selected_model": "baseline",
+  "transformer_included": false,
+  "corpus_sha256": "9e9325c7a8c34e64ea8e32d970075c87079c399aa62a9e45283ea2a648331e0b",
+  "results": [
+    {
+      "key": "baseline",
+      "model_name": "Línea base de reglas",
+      "validation_macro_f1": 1.0,
+      "macro_f1": 1.0,
+      "balanced_accuracy": 1.0,
+      "latency_ms_per_text": 0.13703636366037908,
+      "functional": {
+        "n": 24,
+        "accuracy": 0.4583333333333333,
+        "by_category": {
+          "amenaza": 1.0,
+          "cita_denuncia": 0.0,
+          "contraargumento": 0.0,
+          "evasion": 0.0,
+          "identidad_neutral": 0.0,
+          "insulto": 1.0,
+          "ironia": 0.5,
+          "negacion": 0.5,
+          "neutral": 1.0,
+          "odio_explicito": 1.0,
+          "odio_implicito": 0.0,
+          "polisemia": 0.0,
+          "reapropiacion": 1.0
+        }
+      }
+    },
+    {
+      "key": "logistic",
+      "model_name": "TF-IDF + LogisticRegression",
+      "validation_macro_f1": 0.6190476190476191,
+      "macro_f1": 0.9153439153439153,
+      "balanced_accuracy": 0.9166666666666666,
+      "latency_ms_per_text": 0.28205454542661423,
+      "functional": {
+        "n": 24,
+        "accuracy": 0.4583333333333333,
+        "by_category": {
+          "amenaza": 1.0,
+          "cita_denuncia": 0.0,
+          "contraargumento": 0.0,
+          "evasion": 1.0,
+          "identidad_neutral": 0.0,
+          "insulto": 1.0,
+          "ironia": 0.5,
+          "negacion": 0.0,
+          "neutral": 0.0,
+          "odio_explicito": 1.0,
+          "odio_implicito": 1.0,
+          "polisemia": 0.0,
+          "reapropiacion": 0.0
+        }
+      }
+    },
+    {
+      "key": "svm",
+      "model_name": "TF-IDF + LinearSVC",
+      "validation_macro_f1": 0.6190476190476191,
+      "macro_f1": 0.9153439153439153,
+      "balanced_accuracy": 0.9166666666666666,
+      "latency_ms_per_text": 0.29718181824798445,
+      "functional": {
+        "n": 24,
+        "accuracy": 0.4583333333333333,
+        "by_category": {
+          "amenaza": 1.0,
+          "cita_denuncia": 0.0,
+          "contraargumento": 0.0,
+          "evasion": 1.0,
+          "identidad_neutral": 0.0,
+          "insulto": 1.0,
+          "ironia": 0.5,
+          "negacion": 0.0,
+          "neutral": 0.0,
+          "odio_explicito": 1.0,
+          "odio_implicito": 1.0,
+          "polisemia": 0.0,
+          "reapropiacion": 0.0
+        }
+      }
+    }
+  ]
+}

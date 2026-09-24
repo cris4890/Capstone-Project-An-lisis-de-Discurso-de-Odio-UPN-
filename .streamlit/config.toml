@@ -1,0 +1,10 @@
+# Demostración local. Cambiar la dirección exige revisar el plan de seguridad.
+[server]
+address = "127.0.0.1"
+headless = true
+enableXsrfProtection = true
+enableCORS = true
+maxUploadSize = 10
+
+[browser]
+gatherUsageStats = false
