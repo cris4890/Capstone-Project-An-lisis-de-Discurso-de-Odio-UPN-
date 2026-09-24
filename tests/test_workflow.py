@@ -237,7 +237,7 @@ def test_three_subsystems_and_optional_history(tmp_path, monkeypatch):
     assert app.dataframe[0].value.iloc[0]["Texto procesado"] == "Gracias [USER]"
     app.sidebar.radio[0].set_value("Reportes").run()
     assert not app.exception and len(HistoryStore(path).read()) == 1
-    assert [t.label for t in app.tabs] == ["Evaluación de modelos", "Exploración del corpus"]
+    assert [t.label for t in app.tabs] == ["Evaluación de modelos", "Exploración del corpus", "Anotación y acuerdo"]
 
 
 def test_internal_annotation_separate():
@@ -246,3 +246,31 @@ def test_internal_annotation_separate():
     assert not app.exception
     assert app.title[0].value == "Anotación independiente"
     assert len(app.get("file_uploader")) == 1
+
+
+def test_corrupt_history_is_reported_without_overwrite(tmp_path, monkeypatch):
+    from streamlit.testing.v1 import AppTest
+    path = tmp_path / "broken.sqlite3"
+    original = b"not a sqlite database"
+    path.write_bytes(original)
+    monkeypatch.setenv("CAPSTONE_HISTORY_DB", str(path))
+    app = AppTest.from_file(str(Path(__file__).parents[1]/"app.py"), default_timeout=30).run()
+    app.sidebar.radio[0].set_value("Historial").run()
+    assert not app.exception
+    assert "No se pudo leer" in app.error[0].value
+    assert path.read_bytes() == original
+
+
+def test_invalid_run_can_return_to_demo(tmp_path):
+    from streamlit.testing.v1 import AppTest
+    run = tmp_path / "runs" / "invalid"
+    run.mkdir(parents=True)
+    (run / "run.json").write_text('{broken', encoding="utf-8")
+    source = (Path(__file__).parents[1] / "app.py").read_text(encoding="utf-8")
+    source = source.replace('ROOT = Path(__file__).resolve().parent', f'ROOT = Path({str(tmp_path)!r})')
+    app = AppTest.from_string(source, default_timeout=30).run()
+    app.sidebar.selectbox[0].set_value("invalid").run()
+    assert not app.exception
+    assert "No se pudo verificar" in app.error[0].value
+    app.sidebar.selectbox[0].set_value("Demostración de reglas").run()
+    assert not app.exception and app.text_area

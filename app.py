@@ -12,7 +12,9 @@ from history_store import HistoryStore, history_path
 from corpus import SAFE_COLUMNS
 from data_pipeline import clean_and_anonymize, generate_synthetic_data
 from model_classes import RuleBasedClassifier
+from context_rules import ContextRuleBasedClassifier
 from model_registry import load_run_model
+from annotation_report import render_annotation_report
 
 ROOT = Path(__file__).resolve().parent
 st.set_page_config(
@@ -100,7 +102,14 @@ st.sidebar.caption("Capstone UPN · Apoyo a la revisión humana")
 runs = sorted([p for p in (ROOT/"runs").glob("*") if (p/"run.json").is_file()], reverse=True)
 choice = st.sidebar.selectbox("Ejecución", ["Demostración de reglas"] + [p.name for p in runs])
 run_dir = next((p for p in runs if p.name == choice), None)
-report = read_run(run_dir) if run_dir else None
+try:
+    report = read_run(run_dir) if run_dir else None
+    if report is not None and (not isinstance(report, dict) or
+            report.get("origin") not in {"sintetico", "reddit_autorizado", "licenciado"}):
+        raise ValueError("Origen de ejecución inválido")
+except (OSError, ValueError):
+    st.error("No se pudo verificar la ejecución seleccionada. Selecciona otra ejecución o la demostración de reglas.")
+    st.stop()
 menu = st.sidebar.radio("Sección", ["Clasificación", "Reportes", "Historial"])
 st.sidebar.divider()
 st.sidebar.caption("Herramienta de apoyo. La decisión final corresponde a una persona.")
@@ -121,11 +130,14 @@ if menu == "Clasificación":
             st.error(f"No se pudo cargar el modelo seleccionado: {exc}")
             st.stop()
     else:
-        model, name = RuleBasedClassifier(), "Línea base de reglas · Demostración"
+        model, name = ContextRuleBasedClassifier(), "Reglas de contexto v2 · Demostración"
     st.caption(f"Modelo activo: {name}")
     if isinstance(model, RuleBasedClassifier):
         with st.expander("Alcance y limitaciones del modelo"):
-            st.write("Las reglas pueden confundir menciones neutrales, negaciones o citas con ataques. Revise siempre el contexto.")
+            if isinstance(model, ContextRuleBasedClassifier):
+                st.write("Versión 2: reconoce ciertos patrones de ataque, negación y citas en español e inglés. Su cobertura es limitada; puede fallar con sarcasmo, expresiones nuevas o contexto implícito. Revise siempre el contexto.")
+            else:
+                st.write("Versión histórica: detecta palabras aisladas y puede confundir menciones neutrales con ataques. Se conserva para reproducir esta ejecución. La demostración de reglas utiliza la versión 2.")
     text = st.text_area("Comentario a analizar", height=170, placeholder="Escribe o pega aquí un comentario…")
     save_history = st.checkbox("Guardar en Historial", value=False,
         help="Guarda el texto procesado en este equipo. Revisa que no contenga información personal; el enmascaramiento automático no la detecta toda.")
@@ -162,7 +174,9 @@ if menu == "Clasificación":
 
 elif menu == "Reportes":
     st.title("Reportes")
-    evaluation_tab, corpus_tab = st.tabs(["Evaluación de modelos", "Exploración del corpus"])
+    evaluation_tab, corpus_tab, annotation_tab = st.tabs(["Evaluación de modelos", "Exploración del corpus", "Anotación y acuerdo"])
+    with annotation_tab:
+        render_annotation_report(ROOT)
     with evaluation_tab:
         st.subheader("Evaluación de modelos")
         if report is None:
@@ -215,7 +229,11 @@ else:
     st.title("Historial")
     st.write("Consulta las clasificaciones que decidiste guardar en este equipo.")
     st.caption("Se conserva el texto procesado, la predicción y el modelo utilizado. Estos registros no son etiquetas validadas para entrenamiento.")
-    records = HistoryStore(history_path()).read()
+    try:
+        records = HistoryStore(history_path()).read()
+    except (OSError, sqlite3.Error, pd.errors.DatabaseError):
+        st.error("No se pudo leer el Historial. Revisa el archivo o restaura una copia de seguridad; los datos no se han reemplazado.")
+        st.stop()
     if records.empty:
         st.info("Todavía no hay clasificaciones guardadas. Activa Guardar en Historial al analizar un comentario.")
     else:

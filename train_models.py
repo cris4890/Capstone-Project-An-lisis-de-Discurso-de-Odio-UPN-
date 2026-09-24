@@ -28,6 +28,7 @@ from corpus import prepare_corpus, validate_manifest
 from data_pipeline import generate_synthetic_data
 from experiment import CLASSES, split_corpus, select_model, metrics_for, bootstrap_intervals, subgroup_metrics
 from model_classes import RuleBasedClassifier, TransformerClassifier
+from context_rules import ContextRuleBasedClassifier
 
 ROOT = Path(__file__).resolve().parent
 
@@ -85,12 +86,12 @@ def run_training_pipeline(data_path=None, output=None, include_transformer=False
     split_manifest.to_csv(out / "partitions.csv", index=False)
     train, val, test = [splits[name] for name in ["train", "validation", "test"]]
     candidates = {
-        "baseline": RuleBasedClassifier(),
+        "baseline": ContextRuleBasedClassifier(),
         "logistic": make_pipeline(TfidfVectorizer(ngram_range=(1,2), sublinear_tf=True, strip_accents="unicode"),
                                   LogisticRegression(class_weight="balanced", max_iter=1000, random_state=seed)),
         "svm": make_pipeline(TfidfVectorizer(ngram_range=(1,2), sublinear_tf=True, strip_accents="unicode"),
                              LinearSVC(class_weight="balanced", C=.8, max_iter=2000, random_state=seed))}
-    names = {"baseline": "Línea base de reglas", "logistic": "TF-IDF + LogisticRegression", "svm": "TF-IDF + LinearSVC"}
+    names = {"baseline": "Reglas de contexto v2", "logistic": "TF-IDF + LogisticRegression", "svm": "TF-IDF + LinearSVC"}
     validation_scores, training_seconds = {}, {}
     for key, model in candidates.items():
         start = time.perf_counter()

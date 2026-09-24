@@ -22,7 +22,7 @@ Esta matriz distingue implementación técnica, pruebas locales y evidencia de i
 
 - Separación por hilo: implementada con objetivo aproximado 70/15/15. La restricción de grupos puede impedir proporciones exactas. La selección de partición usa tamaños y etiquetas, nunca desempeño del modelo.
 - Selección del modelo: Macro-F1 de validación; decisión guardada antes de predecir prueba.
-- Kappa: cálculo y matriz implementados; no hay resultado humano acreditado.
+- Kappa: piloto sintético con respuestas reportadas de A y B, 49 pares originales y kappa 0,828791; seis casos con adjudicación reportada de E3. No acredita independencia humana autenticada ni validación de un corpus real. Ver `reporte_anotacion.md` y `corpus_piloto.md`.
 - V de Aiken: función disponible; faltan valoraciones de especialistas.
 - Pruebas funcionales: 24 casos bilingües propuestos, pendientes de validación humana; sus fallos se reportan, no se ocultan.
 - Rendimiento: tiempos y asignaciones de memoria de Python. La medida no incluye toda la memoria nativa ni GPU.
