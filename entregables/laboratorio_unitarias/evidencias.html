@@ -1,0 +1,1019 @@
+<!doctype html><html lang="es"><meta charset="utf-8"><title>Evidencias del laboratorio HateDetect</title><style>body{font:16px system-ui;max-width:1100px;margin:40px auto;padding:20px;color:#17202a}pre{background:#f1f3f5;padding:20px;overflow:auto;font:13px Consolas,monospace}h2{margin-top:40px}</style><h1>Evidencias del laboratorio HateDetect</h1><p>Fuentes y registros reales de ejecución. Esta vista no es una captura de pantalla de un IDE.</p>
+<h2>Estructura del laboratorio</h2><pre>data_pipeline.py
+experiment.py
+tests/test_laboratorio_unitarias.py
+tools/ejecutar_laboratorio.py</pre>
+<h2>data_pipeline.py</h2><pre>&quot;&quot;&quot;
+Módulo de Ingesta, Generación y Preprocesamiento de Datos de Reddit
+===================================================================
+
+Proyecto: Análisis y Clasificación Automática del Discurso de Odio
+          en Comunidades de Reddit (r/Millennials y r/GenZ).
+
+Este módulo proporciona:
+1. Generación de un corpus bilingüe sintético (español e inglés) representativo
+   de interacciones en Reddit, balanceado por comunidad, idioma y clase de discurso.
+2. Funciones de limpieza, normalización Unicode y anonimización de texto
+   (sustitución de nombres de usuario y enlaces web preservando emojis y signos clave).
+3. Pipeline automatizado para procesar el dataset y exportarlo en formatos CSV y Parquet.
+
+Autor: Senior Data Engineer (NLP &amp; Python)
+&quot;&quot;&quot;
+
+import logging
+import os
+import re
+import unicodedata
+from pathlib import Path
+from typing import List, Dict, Optional, Union
+
+import pandas as pd
+
+# Configuración básica de logging estructurado
+logging.basicConfig(
+    level=logging.INFO,
+    format=&quot;%(asctime)s [%(levelname)s] %(name)s: %(message)s&quot;,
+    datefmt=&quot;%Y-%m-%d %H:%M:%S&quot;,
+)
+logger = logging.getLogger(&quot;DataPipeline&quot;)
+
+# Rutas estándar del proyecto
+BASE_DIR = Path(__file__).resolve().parent
+DATA_DIR = BASE_DIR / &quot;data&quot;
+DEFAULT_CSV_PATH = DATA_DIR / &quot;corpus_preprocesado.csv&quot;
+DEFAULT_PARQUET_PATH = DATA_DIR / &quot;corpus_preprocesado.parquet&quot;
+
+# Expresiones regulares precompiladas para optimizar el rendimiento en inferencia por lotes
+RE_UNICODE_INVISIBLE = re.compile(r&quot;[\u200b\u200e\u200f\ufeff]&quot;)
+RE_NON_BREAKING_SPACES = re.compile(r&quot;[\u00a0\u1680\u2000-\u200a\u202f\u205f\u3000]&quot;)
+# Detecta URLs (http, https, www) sin absorber signos de puntuación o paréntesis finales
+RE_URL = re.compile(r&quot;(?:https?://|www\.)\S+?(?=[.,;!?)]*(?:\s|$))&quot;, flags=re.IGNORECASE)
+# Detecta menciones de usuario Reddit (/u/usuario, u/usuario) o menciones (@usuario)
+# Excluye direcciones de correo electrónico previniendo coincidencias precedidas por caracteres de palabra
+RE_USER = re.compile(r&quot;(?&lt;!\w)(?:/?u/|@)[A-Za-z0-9_-]+&quot;, flags=re.IGNORECASE)
+# Normalización de espacios repetidos
+RE_SPACES = re.compile(r&quot;\s+&quot;)
+
+
+def clean_and_anonymize(text: str) -&gt; str:
+    &quot;&quot;&quot;
+    Limpia, normaliza y anonimiza un texto proveniente de comentarios de Reddit.
+
+    Operaciones realizadas:
+    a) Sustituye nombres de usuario (ej. u/usuario, /u/usuario, @usuario) por &#x27;[USER]&#x27;.
+    b) Sustituye enlaces y URLs (http, https, www) por &#x27;[URL]&#x27;.
+    c) Normaliza la codificación Unicode mediante la forma canónica NFKC, eliminando
+       espacios invisibles o de no separación, manteniendo intactos emojis, tildes y
+       signos de puntuación clave (¿?, ¡!, ., ,, etc.).
+    d) Estandariza múltiples espacios en blanco a un único espacio y recorta extremos.
+
+    Args:
+        text (str): Texto crudo original del comentario.
+
+    Returns:
+        str: Texto procesado, normalizado y anonimizado.
+    &quot;&quot;&quot;
+    if not isinstance(text, str):
+        return &quot;&quot;
+
+    # 1. Normalización Unicode canónica (NFKC) para caracteres compuestos y compatibles
+    cleaned = unicodedata.normalize(&quot;NFKC&quot;, text)
+
+    # 2. Eliminación de caracteres invisibles y formato de control de texto
+    cleaned = RE_UNICODE_INVISIBLE.sub(&quot;&quot;, cleaned)
+    cleaned = RE_NON_BREAKING_SPACES.sub(&quot; &quot;, cleaned)
+
+    # 3. Anonimización de URLs
+    cleaned = RE_URL.sub(&quot;[URL]&quot;, cleaned)
+
+    cleaned = re.sub(r&quot;[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}&quot;, &quot;[EMAIL]&quot;, cleaned)
+    cleaned = re.sub(r&quot;(?&lt;!\w)\+?\d[\d ()-]{7,}\d(?!\w)&quot;, &quot;[PHONE]&quot;, cleaned)
+
+    # 4. Anonimización de usuarios de Reddit y menciones
+    cleaned = RE_USER.sub(&quot;[USER]&quot;, cleaned)
+
+    # 5. Normalización de espacios y saltos de línea redundantes
+    cleaned = RE_SPACES.sub(&quot; &quot;, cleaned).strip()
+
+    return cleaned
+
+
+def generate_synthetic_data() -&gt; pd.DataFrame:
+    &quot;&quot;&quot;
+    Genera un conjunto sintético balanceado de comentarios representativos
+    para comunidades de Reddit (&#x27;r/Millennials&#x27; y &#x27;r/GenZ&#x27;) en español e inglés.
+
+    El corpus incluye 72 registros distribuidos de manera equilibrada en:
+    - Subreddits: &#x27;r/Millennials&#x27;, &#x27;r/GenZ&#x27;
+    - Idiomas: &#x27;es&#x27;, &#x27;en&#x27;
+    - Categorías de clasificación:
+        * &#x27;Odio&#x27;: Discurso de odio hacia grupos protegidos (nacionalidad, género, raza, orientación).
+        * &#x27;Ofensivo&#x27;: Agresiones personales, toxicidad, insultos directos sin encajar en odio hacia minorías.
+        * &#x27;Neutro&#x27;: Discusiones constructivas, nostalgia, consejos, preguntas informativas.
+
+    Returns:
+        pd.DataFrame: DataFrame con columnas [&#x27;id_comentario&#x27;, &#x27;subreddit&#x27;, &#x27;idioma&#x27;, &#x27;texto_original&#x27;, &#x27;etiqueta&#x27;].
+    &quot;&quot;&quot;
+    records: List[Dict[str, str]] = [
+        # =========================================================================
+        # 1. r/Millennials - Español
+        # =========================================================================
+        # Odio (ES - Millennials)
+        {
+            &quot;subreddit&quot;: &quot;r/Millennials&quot;,
+            &quot;idioma&quot;: &quot;es&quot;,
+            &quot;texto_original&quot;: &quot;Todos esos inmigrantes que vienen a quitarnos los empleos deberían ser expulsados a la fuerza. u/carlos_90 tiene razón, arruinan nuestro país.&quot;,
+            &quot;etiqueta&quot;: &quot;Odio&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/Millennials&quot;,
+            &quot;idioma&quot;: &quot;es&quot;,
+            &quot;texto_original&quot;: &quot;La culpa de que no haya viviendas es de esa plaga de extranjeros ilegales. Míralo tú mismo en https://noticias-locales.com/crisis.&quot;,
+            &quot;etiqueta&quot;: &quot;Odio&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/Millennials&quot;,
+            &quot;idioma&quot;: &quot;es&quot;,
+            &quot;texto_original&quot;: &quot;Esa comunidad de degenerados LGBT está destruyendo los valores familiares tradicionales con los que crecimos en los 90s. Dan asco.&quot;,
+            &quot;etiqueta&quot;: &quot;Odio&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/Millennials&quot;,
+            &quot;idioma&quot;: &quot;es&quot;,
+            &quot;texto_original&quot;: &quot;Las feminazis modernas solo quieren privilegios y destruir a los hombres trabajadores. No sirven para nada. /u/antifem_truth&quot;,
+            &quot;etiqueta&quot;: &quot;Odio&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/Millennials&quot;,
+            &quot;idioma&quot;: &quot;es&quot;,
+            &quot;texto_original&quot;: &quot;Esa etnia siempre ha sido una lacra social y criminal. No es racismo, es la pura realidad biológica https://datos-falsos.org/estudio.&quot;,
+            &quot;etiqueta&quot;: &quot;Odio&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/Millennials&quot;,
+            &quot;idioma&quot;: &quot;es&quot;,
+            &quot;texto_original&quot;: &quot;Deberíamos mandar a todos esos refugiados de vuelta a su basurero antes de que nos reemplacen a todos los ciudadanos honestos.&quot;,
+            &quot;etiqueta&quot;: &quot;Odio&quot;,
+        },
+        # Ofensivo (ES - Millennials)
+        {
+            &quot;subreddit&quot;: &quot;r/Millennials&quot;,
+            &quot;idioma&quot;: &quot;es&quot;,
+            &quot;texto_original&quot;: &quot;Eres un tonto no sirves para nada bruto, cállate estúpido y deja de opinar idioteces u/bocazas.&quot;,
+            &quot;etiqueta&quot;: &quot;Ofensivo&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/Millennials&quot;,
+            &quot;idioma&quot;: &quot;es&quot;,
+            &quot;texto_original&quot;: &quot;Eres un inútil y un fracasado patético de 35 años que no sirve para nada. Das vergüenza ajena 🤡.&quot;,
+            &quot;etiqueta&quot;: &quot;Ofensivo&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/Millennials&quot;,
+            &quot;idioma&quot;: &quot;es&quot;,
+            &quot;texto_original&quot;: &quot;Cállate estúpido lamebotas insoportable, vete al carajo con tus consejos baratos https://linkedin.com/in/fakecoach.&quot;,
+            &quot;etiqueta&quot;: &quot;Ofensivo&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/Millennials&quot;,
+            &quot;idioma&quot;: &quot;es&quot;,
+            &quot;texto_original&quot;: &quot;Maldita sea, estoy harto de idiotas y brutos como /u/marcos_rr que defienden a los usureros. Púdrete.&quot;,
+            &quot;etiqueta&quot;: &quot;Ofensivo&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/Millennials&quot;,
+            &quot;idioma&quot;: &quot;es&quot;,
+            &quot;texto_original&quot;: &quot;Tu comentario es una completa basura y tú eres un tonto que no sabe nada de la vida. Púdrete.&quot;,
+            &quot;etiqueta&quot;: &quot;Ofensivo&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/Millennials&quot;,
+            &quot;idioma&quot;: &quot;es&quot;,
+            &quot;texto_original&quot;: &quot;Deja de llorar por cualquier estupidez, imbécil inútil. Madura de una maldita vez y ponte a trabajar.&quot;,
+            &quot;etiqueta&quot;: &quot;Ofensivo&quot;,
+        },
+        # Neutro (ES - Millennials)
+        {
+            &quot;subreddit&quot;: &quot;r/Millennials&quot;,
+            &quot;idioma&quot;: &quot;es&quot;,
+            &quot;texto_original&quot;: &quot;¿Alguien más recuerda pasar las tardes jugando con la Nintendo 64 y comiendo cereales? Qué buenos tiempos u/retro_gamer.&quot;,
+            &quot;etiqueta&quot;: &quot;Neutro&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/Millennials&quot;,
+            &quot;idioma&quot;: &quot;es&quot;,
+            &quot;texto_original&quot;: &quot;La subida de los tipos de interés hace imposible comprar un piso ahora mismo en las grandes ciudades. Les comparto este informe: https://ine.es/vivienda2024.&quot;,
+            &quot;etiqueta&quot;: &quot;Neutro&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/Millennials&quot;,
+            &quot;idioma&quot;: &quot;es&quot;,
+            &quot;texto_original&quot;: &quot;A mis 34 años decidí cambiar de carrera hacia desarrollo de software y fue la mejor decisión 💻🚀.&quot;,
+            &quot;etiqueta&quot;: &quot;Neutro&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/Millennials&quot;,
+            &quot;idioma&quot;: &quot;es&quot;,
+            &quot;texto_original&quot;: &quot;Me gusta mucho cómo /u/psicologia_millennial explica el síndrome de burnout en su blog: https://saludmental.org/burnout.&quot;,
+            &quot;etiqueta&quot;: &quot;Neutro&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/Millennials&quot;,
+            &quot;idioma&quot;: &quot;es&quot;,
+            &quot;texto_original&quot;: &quot;¿Qué podcasts en español recomiendan sobre finanzas personales y ahorro para el retiro?&quot;,
+            &quot;etiqueta&quot;: &quot;Neutro&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/Millennials&quot;,
+            &quot;idioma&quot;: &quot;es&quot;,
+            &quot;texto_original&quot;: &quot;Totalmente de acuerdo con tu punto sobre el equilibrio entre la vida laboral y personal. Saludos @ana_maldonado.&quot;,
+            &quot;etiqueta&quot;: &quot;Neutro&quot;,
+        },
+        # =========================================================================
+        # 2. r/Millennials - English
+        # =========================================================================
+        # Odio (EN - Millennials)
+        {
+            &quot;subreddit&quot;: &quot;r/Millennials&quot;,
+            &quot;idioma&quot;: &quot;en&quot;,
+            &quot;texto_original&quot;: &quot;All these illegal immigrants pouring across the border are ruining our communities. Send them all back where they belong! u/border_patrol.&quot;,
+            &quot;etiqueta&quot;: &quot;Odio&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/Millennials&quot;,
+            &quot;idioma&quot;: &quot;en&quot;,
+            &quot;texto_original&quot;: &quot;Trans ideology is a mental illness pushed by sick perverts targeting our children. Look at this madness: https://fake-news-patriot.org/leak.&quot;,
+            &quot;etiqueta&quot;: &quot;Odio&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/Millennials&quot;,
+            &quot;idioma&quot;: &quot;en&quot;,
+            &quot;texto_original&quot;: &quot;Women only marry for money and ruin men in family courts. They are selfish parasites /u/mgtow_legacy.&quot;,
+            &quot;etiqueta&quot;: &quot;Odio&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/Millennials&quot;,
+            &quot;idioma&quot;: &quot;en&quot;,
+            &quot;texto_original&quot;: &quot;Certain ethnic groups are genetically prone to crime and lower IQ, look at the stats on https://alt-stats.net/crimes.&quot;,
+            &quot;etiqueta&quot;: &quot;Odio&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/Millennials&quot;,
+            &quot;idioma&quot;: &quot;en&quot;,
+            &quot;texto_original&quot;: &quot;Muslim refugees will never integrate into Western society, they want to enforce sharia law and replace us all.&quot;,
+            &quot;etiqueta&quot;: &quot;Odio&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/Millennials&quot;,
+            &quot;idioma&quot;: &quot;en&quot;,
+            &quot;texto_original&quot;: &quot;Those disgusting degenerates in pride parades shouldn&#x27;t be allowed around decent people. u/traditional_values_guy.&quot;,
+            &quot;etiqueta&quot;: &quot;Odio&quot;,
+        },
+        # Ofensivo (EN - Millennials)
+        {
+            &quot;subreddit&quot;: &quot;r/Millennials&quot;,
+            &quot;idioma&quot;: &quot;en&quot;,
+            &quot;texto_original&quot;: &quot;Shut your fucking mouth, you clueless corporate bootlicker. Nobody asked for your stupid opinion u/office_drone.&quot;,
+            &quot;etiqueta&quot;: &quot;Ofensivo&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/Millennials&quot;,
+            &quot;idioma&quot;: &quot;en&quot;,
+            &quot;texto_original&quot;: &quot;You&#x27;re 38 and still broke complaining about landlords? Get off your lazy ass and stop being a pathetic loser 🤡.&quot;,
+            &quot;etiqueta&quot;: &quot;Ofensivo&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/Millennials&quot;,
+            &quot;idioma&quot;: &quot;en&quot;,
+            &quot;texto_original&quot;: &quot;Go fuck yourself. Your take on the housing market is literally brain-dead https://reddit.com/r/housing/idiots.&quot;,
+            &quot;etiqueta&quot;: &quot;Ofensivo&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/Millennials&quot;,
+            &quot;idioma&quot;: &quot;en&quot;,
+            &quot;texto_original&quot;: &quot;What a complete piece of shit /u/crypto_bro_99 is for scamming people in this sub.&quot;,
+            &quot;etiqueta&quot;: &quot;Ofensivo&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/Millennials&quot;,
+            &quot;idioma&quot;: &quot;en&quot;,
+            &quot;texto_original&quot;: &quot;You are an insufferable prick and everyone in your office probably hates you behind your back.&quot;,
+            &quot;etiqueta&quot;: &quot;Ofensivo&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/Millennials&quot;,
+            &quot;idioma&quot;: &quot;en&quot;,
+            &quot;texto_original&quot;: &quot;Stop crying like a little bitch and take accountability for your awful life choices.&quot;,
+            &quot;etiqueta&quot;: &quot;Ofensivo&quot;,
+        },
+        # Neutro (EN - Millennials)
+        {
+            &quot;subreddit&quot;: &quot;r/Millennials&quot;,
+            &quot;idioma&quot;: &quot;en&quot;,
+            &quot;texto_original&quot;: &quot;Remember coming home from middle school to watch TRL on MTV and log into AIM? The nostalgia hits hard u/90s_kid.&quot;,
+            &quot;etiqueta&quot;: &quot;Neutro&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/Millennials&quot;,
+            &quot;idioma&quot;: &quot;en&quot;,
+            &quot;texto_original&quot;: &quot;We finally paid off the last of our student loans today after 11 years! Such a relief 🥑🎉.&quot;,
+            &quot;etiqueta&quot;: &quot;Neutro&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/Millennials&quot;,
+            &quot;idioma&quot;: &quot;en&quot;,
+            &quot;texto_original&quot;: &quot;Here is a great breakdown of index fund investing for 30-somethings: https://bogleheads.org/wiki/Three-fund_portfolio.&quot;,
+            &quot;etiqueta&quot;: &quot;Neutro&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/Millennials&quot;,
+            &quot;idioma&quot;: &quot;en&quot;,
+            &quot;texto_original&quot;: &quot;Honestly, cutting out alcohol in my mid-30s completely cured my chronic fatigue and insomnia @healthy_habits.&quot;,
+            &quot;etiqueta&quot;: &quot;Neutro&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/Millennials&quot;,
+            &quot;idioma&quot;: &quot;en&quot;,
+            &quot;texto_original&quot;: &quot;Did anyone else transition from tech into trades? Wondering if plumbing or electrical is worth learning now.&quot;,
+            &quot;etiqueta&quot;: &quot;Neutro&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/Millennials&quot;,
+            &quot;idioma&quot;: &quot;en&quot;,
+            &quot;texto_original&quot;: &quot;Check out /u/cooking_enthusiast&#x27;s recipe for sourdough bread, made it yesterday and it turned out amazing https://cooking.com/bread.&quot;,
+            &quot;etiqueta&quot;: &quot;Neutro&quot;,
+        },
+        # =========================================================================
+        # 3. r/GenZ - Español
+        # =========================================================================
+        # Odio (ES - GenZ)
+        {
+            &quot;subreddit&quot;: &quot;r/GenZ&quot;,
+            &quot;idioma&quot;: &quot;es&quot;,
+            &quot;texto_original&quot;: &quot;Todos los maricones y raritos de género deberían ser internados en psiquiátricos, dan asco en la escuela u/edgy_teen.&quot;,
+            &quot;etiqueta&quot;: &quot;Odio&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/GenZ&quot;,
+            &quot;idioma&quot;: &quot;es&quot;,
+            &quot;texto_original&quot;: &quot;Esa gente marrón que invade nuestros colegios debería largarse de España. Arruinan nuestra cultura https://nacionalismo-extremo.com.&quot;,
+            &quot;etiqueta&quot;: &quot;Odio&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/GenZ&quot;,
+            &quot;idioma&quot;: &quot;es&quot;,
+            &quot;texto_original&quot;: &quot;Las feministas modernas son todas unas gordas resentidas que odian a los hombres porque nadie se las coge /u/alfa_redpill.&quot;,
+            &quot;etiqueta&quot;: &quot;Odio&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/GenZ&quot;,
+            &quot;idioma&quot;: &quot;es&quot;,
+            &quot;texto_original&quot;: &quot;Los judíos controlan toda la industria musical y los medios para manipular a nuestra generación. Despierten: https://conspiracion.net/agenda.&quot;,
+            &quot;etiqueta&quot;: &quot;Odio&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/GenZ&quot;,
+            &quot;idioma&quot;: &quot;es&quot;,
+            &quot;texto_original&quot;: &quot;Ojalá limpien las calles de todos esos mendigos y gitanos, son una escoria que no merece derechos humanos.&quot;,
+            &quot;etiqueta&quot;: &quot;Odio&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/GenZ&quot;,
+            &quot;idioma&quot;: &quot;es&quot;,
+            &quot;texto_original&quot;: &quot;Esas personas trans mutilan sus cuerpos y esperan que celebremos su perversión. Son enfermos mentales @vox_fan.&quot;,
+            &quot;etiqueta&quot;: &quot;Odio&quot;,
+        },
+        # Ofensivo (ES - GenZ)
+        {
+            &quot;subreddit&quot;: &quot;r/GenZ&quot;,
+            &quot;idioma&quot;: &quot;es&quot;,
+            &quot;texto_original&quot;: &quot;Cállate la puta boca, eres un tonto no sirves para nada bruto. Cero rizz u/skibidi_clown 💀.&quot;,
+            &quot;etiqueta&quot;: &quot;Ofensivo&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/GenZ&quot;,
+            &quot;idioma&quot;: &quot;es&quot;,
+            &quot;texto_original&quot;: &quot;Cállate estúpido, das cringe supremo con tus tiktoks de mierda. Eres un inútil borra la cuenta.&quot;,
+            &quot;etiqueta&quot;: &quot;Ofensivo&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/GenZ&quot;,
+            &quot;idioma&quot;: &quot;es&quot;,
+            &quot;texto_original&quot;: &quot;Tu opinión es pura basura, eres un bruto si de verdad crees que la uni vale la pena https://reddit.com/r/GenZ/comments/123.&quot;,
+            &quot;etiqueta&quot;: &quot;Ofensivo&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/GenZ&quot;,
+            &quot;idioma&quot;: &quot;es&quot;,
+            &quot;texto_original&quot;: &quot;Maldito tonto ignorante /u/toxic_gamer, aprende a jugar o desinstala el juego pedazo de bruto.&quot;,
+            &quot;etiqueta&quot;: &quot;Ofensivo&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/GenZ&quot;,
+            &quot;idioma&quot;: &quot;es&quot;,
+            &quot;texto_original&quot;: &quot;Qué asco de pavo, eres un estúpido inútil, ojalá te atropellen por pesado.&quot;,
+            &quot;etiqueta&quot;: &quot;Ofensivo&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/GenZ&quot;,
+            &quot;idioma&quot;: &quot;es&quot;,
+            &quot;texto_original&quot;: &quot;Deja de decir mamadas y ponte a estudiar, payaso tonto y fracasado 🤡.&quot;,
+            &quot;etiqueta&quot;: &quot;Ofensivo&quot;,
+        },
+        # Neutro (ES - GenZ)
+        {
+            &quot;subreddit&quot;: &quot;r/GenZ&quot;,
+            &quot;idioma&quot;: &quot;es&quot;,
+            &quot;texto_original&quot;: &quot;La verdad la situación laboral para los recién graduados está bastante difícil, pero no hay que rendirse u/estudiante_2004.&quot;,
+            &quot;etiqueta&quot;: &quot;Neutro&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/GenZ&quot;,
+            &quot;idioma&quot;: &quot;es&quot;,
+            &quot;texto_original&quot;: &quot;Encontré este canal de YouTube que explica cálculo multivariable genial: https://youtube.com/watch?v=calculo_pro.&quot;,
+            &quot;etiqueta&quot;: &quot;Neutro&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/GenZ&quot;,
+            &quot;idioma&quot;: &quot;es&quot;,
+            &quot;texto_original&quot;: &quot;Siento que nuestra generación tiene mucha conciencia ambiental pero poca esperanza real frente al cambio climático 🌱.&quot;,
+            &quot;etiqueta&quot;: &quot;Neutro&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/GenZ&quot;,
+            &quot;idioma&quot;: &quot;es&quot;,
+            &quot;texto_original&quot;: &quot;Para los que buscan su primer empleo en tech, les recomiendo armar proyectos en GitHub: https://github.com/recursos-juniors.&quot;,
+            &quot;etiqueta&quot;: &quot;Neutro&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/GenZ&quot;,
+            &quot;idioma&quot;: &quot;es&quot;,
+            &quot;texto_original&quot;: &quot;¿Alguien más siente que TikTok arruinó su capacidad de concentración para leer libros enteros? @sofia_lectora&quot;,
+            &quot;etiqueta&quot;: &quot;Neutro&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/GenZ&quot;,
+            &quot;idioma&quot;: &quot;es&quot;,
+            &quot;texto_original&quot;: &quot;Tremendo beat el nuevo tema que subió /u/prod_marcos a Soundcloud, tiene muy buena vibra 🔥🎧.&quot;,
+            &quot;etiqueta&quot;: &quot;Neutro&quot;,
+        },
+        # =========================================================================
+        # 4. r/GenZ - English
+        # =========================================================================
+        # Odio (EN - GenZ)
+        {
+            &quot;subreddit&quot;: &quot;r/GenZ&quot;,
+            &quot;idioma&quot;: &quot;en&quot;,
+            &quot;texto_original&quot;: &quot;Get these third-world illegal invaders out of our country before they turn every city into a ghetto u/genz_nationalist.&quot;,
+            &quot;etiqueta&quot;: &quot;Odio&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/GenZ&quot;,
+            &quot;idioma&quot;: &quot;en&quot;,
+            &quot;texto_original&quot;: &quot;Trans people are mentally ill groomers and should not be allowed anywhere near children or schools: https://radical-take.org/truth.&quot;,
+            &quot;etiqueta&quot;: &quot;Odio&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/GenZ&quot;,
+            &quot;idioma&quot;: &quot;en&quot;,
+            &quot;texto_original&quot;: &quot;Women have zero loyalty and only seek validation on TikTok while destroying real masculinity. Total subhumans /u/based_sigmamale.&quot;,
+            &quot;etiqueta&quot;: &quot;Odio&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/GenZ&quot;,
+            &quot;idioma&quot;: &quot;en&quot;,
+            &quot;texto_original&quot;: &quot;Certain races have lower genetic potential for science and tech, it&#x27;s basic evolutionary biology https://race-facts-fake.com/chart.&quot;,
+            &quot;etiqueta&quot;: &quot;Odio&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/GenZ&quot;,
+            &quot;idioma&quot;: &quot;en&quot;,
+            &quot;texto_original&quot;: &quot;Gay pride is degenerate propaganda funded by globalist elites to depopulate the West. Disgusting pigs.&quot;,
+            &quot;etiqueta&quot;: &quot;Odio&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/GenZ&quot;,
+            &quot;idioma&quot;: &quot;en&quot;,
+            &quot;texto_original&quot;: &quot;Feminism is a cancer that ruined modern society. Women should be stripped of voting rights @anti_woke_18.&quot;,
+            &quot;etiqueta&quot;: &quot;Odio&quot;,
+        },
+        # Ofensivo (EN - GenZ)
+        {
+            &quot;subreddit&quot;: &quot;r/GenZ&quot;,
+            &quot;idioma&quot;: &quot;en&quot;,
+            &quot;texto_original&quot;: &quot;Shut the fuck up you brainrotted NPC. Your take has zero rizz and maximum cringe u/clown_energy 💀.&quot;,
+            &quot;etiqueta&quot;: &quot;Ofensivo&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/GenZ&quot;,
+            &quot;idioma&quot;: &quot;en&quot;,
+            &quot;texto_original&quot;: &quot;Delete your account you absolute dumbass, you have negative IQ and no future https://tiktok.com/@loser/video/1.&quot;,
+            &quot;etiqueta&quot;: &quot;Ofensivo&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/GenZ&quot;,
+            &quot;idioma&quot;: &quot;en&quot;,
+            &quot;texto_original&quot;: &quot;Go touch grass you pathetic virgin neckbeard. Nobody cares about your useless crying /u/edgelord420.&quot;,
+            &quot;etiqueta&quot;: &quot;Ofensivo&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/GenZ&quot;,
+            &quot;idioma&quot;: &quot;en&quot;,
+            &quot;texto_original&quot;: &quot;You&#x27;re a miserable piece of shit for cheating on your exams. Get exposed, bitch.&quot;,
+            &quot;etiqueta&quot;: &quot;Ofensivo&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/GenZ&quot;,
+            &quot;idioma&quot;: &quot;en&quot;,
+            &quot;texto_original&quot;: &quot;Stop yapping holy shit, you&#x27;re annoying as fuck and everyone in the group chat laughs at you.&quot;,
+            &quot;etiqueta&quot;: &quot;Ofensivo&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/GenZ&quot;,
+            &quot;idioma&quot;: &quot;en&quot;,
+            &quot;texto_original&quot;: &quot;Bro is actually retarded if he thinks buying crypto memecoins is an investment strategy 🤡.&quot;,
+            &quot;etiqueta&quot;: &quot;Ofensivo&quot;,
+        },
+        # Neutro (EN - GenZ)
+        {
+            &quot;subreddit&quot;: &quot;r/GenZ&quot;,
+            &quot;idioma&quot;: &quot;en&quot;,
+            &quot;texto_original&quot;: &quot;Does anyone else feel like college tuition is just way too overpriced compared to learning online? u/study_grind.&quot;,
+            &quot;etiqueta&quot;: &quot;Neutro&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/GenZ&quot;,
+            &quot;idioma&quot;: &quot;en&quot;,
+            &quot;texto_original&quot;: &quot;Here is a free curated list of internships for summer 2025: https://github.com/pittcsc/Summer2025-Internships.&quot;,
+            &quot;etiqueta&quot;: &quot;Neutro&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/GenZ&quot;,
+            &quot;idioma&quot;: &quot;en&quot;,
+            &quot;texto_original&quot;: &quot;Actually no cap, learning how to cook simple meals saved me so much money living in the dorms 🍳.&quot;,
+            &quot;etiqueta&quot;: &quot;Neutro&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/GenZ&quot;,
+            &quot;idioma&quot;: &quot;en&quot;,
+            &quot;texto_original&quot;: &quot;Check out this guide by /u/budget_buddy on building credit safely as a college freshman: https://nerdwallet.com/best-credit-cards.&quot;,
+            &quot;etiqueta&quot;: &quot;Neutro&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/GenZ&quot;,
+            &quot;idioma&quot;: &quot;en&quot;,
+            &quot;texto_original&quot;: &quot;I really love how our generation prioritizes mental health over hustle culture burnout ✨.&quot;,
+            &quot;etiqueta&quot;: &quot;Neutro&quot;,
+        },
+        {
+            &quot;subreddit&quot;: &quot;r/GenZ&quot;,
+            &quot;idioma&quot;: &quot;en&quot;,
+            &quot;texto_original&quot;: &quot;What are your favorite indie games released this year? Need recommendations for steam summer sale @gaming_vibes.&quot;,
+            &quot;etiqueta&quot;: &quot;Neutro&quot;,
+        },
+    ]
+
+    # Asignación de ID único estructurado para trazabilidad
+    for idx, item in enumerate(records, start=1):
+        item[&quot;id_comentario&quot;] = f&quot;cmt_{idx:04d}&quot;
+
+    df = pd.DataFrame(records)
+    # Reordenar columnas para mantener el esquema contractual solicitado
+    df = df[[&quot;id_comentario&quot;, &quot;subreddit&quot;, &quot;idioma&quot;, &quot;texto_original&quot;, &quot;etiqueta&quot;]]
+    logger.info(&quot;Generados %d registros sintéticos bilingües exitosamente.&quot;, len(df))
+    df[&quot;origen&quot;] = &quot;sintetico&quot;
+    df[&quot;id_hilo&quot;] = df[&quot;id_comentario&quot;]
+    df[&quot;tipo_contenido&quot;] = &quot;comentario&quot;
+    return df
+
+
+def process_and_save(
+    df: Optional[pd.DataFrame] = None,
+    output_csv: Union[str, Path] = DEFAULT_CSV_PATH,
+    output_parquet: Union[str, Path] = DEFAULT_PARQUET_PATH,
+) -&gt; pd.DataFrame:
+    &quot;&quot;&quot;
+    Ejecuta el pipeline de preprocesamiento sobre el DataFrame de comentarios,
+    aplica la anonimización/limpieza de texto, añade &#x27;texto_limpio&#x27; y persiste los
+    datos tanto en formato CSV como en Apache Parquet.
+
+    Args:
+        df (Optional[pd.DataFrame]): DataFrame de entrada. Si es None, genera el
+                                     dataset sintético por defecto.
+        output_csv (Union[str, Path]): Ruta de destino para el archivo CSV.
+        output_parquet (Union[str, Path]): Ruta de destino para el archivo Parquet.
+
+    Returns:
+        pd.DataFrame: DataFrame procesado con la nueva columna &#x27;texto_limpio&#x27;.
+    &quot;&quot;&quot;
+    if df is None:
+        logger.info(&quot;No se proporcionó DataFrame. Generando datos sintéticos...&quot;)
+        df = generate_synthetic_data()
+
+    from corpus import prepare_corpus
+    if &quot;origen&quot; not in df.columns:
+        raise ValueError(&quot;Declare la procedencia del corpus antes de procesarlo.&quot;)
+    df_processed, report = prepare_corpus(df)
+    csv_path, parquet_path = Path(output_csv), Path(output_parquet)
+    csv_path.parent.mkdir(parents=True, exist_ok=True)
+    parquet_path.parent.mkdir(parents=True, exist_ok=True)
+    df_processed.to_csv(csv_path, index=False, encoding=&quot;utf-8&quot;)
+    df_processed.to_parquet(parquet_path, index=False)
+    import json
+    csv_path.with_suffix(&quot;.quality.json&quot;).write_text(
+        json.dumps(report, ensure_ascii=False, indent=2), encoding=&quot;utf-8&quot;)
+
+    return df_processed
+
+
+def print_corpus_summary(df: pd.DataFrame) -&gt; None:
+    &quot;&quot;&quot;
+    Imprime métricas descriptivas y una muestra de verificación de la limpieza.
+    &quot;&quot;&quot;
+    print(&quot;\n&quot; + &quot;=&quot; * 70)
+    print(&quot;RESUMEN DEL CORPUS PREPROCESADO&quot;)
+    print(&quot;=&quot; * 70)
+    print(f&quot;Total de registros: {len(df)}&quot;)
+    print(&quot;\nDistribución por Etiqueta:&quot;)
+    print(df[&quot;etiqueta&quot;].value_counts().to_string())
+    print(&quot;\nDistribución por Subreddit:&quot;)
+    print(df[&quot;subreddit&quot;].value_counts().to_string())
+    print(&quot;\nDistribución por Idioma:&quot;)
+    print(df[&quot;idioma&quot;].value_counts().to_string())
+    print(&quot;\n&quot; + &quot;-&quot; * 70)
+    print(&quot;MUESTRA COMPARATIVA (Original vs. Limpio):&quot;)
+    print(&quot;-&quot; * 70)
+    sample_df = df.sample(n=min(5, len(df)), random_state=42)
+    for _, row in sample_df.iterrows():
+        print(f&quot;[{row[&#x27;id_comentario&#x27;]}] ({row[&#x27;subreddit&#x27;]} | {row[&#x27;idioma&#x27;]} | {row[&#x27;etiqueta&#x27;]})&quot;)
+
+        print(f&quot;  LIMPIO  : {row[&#x27;texto_limpio&#x27;]}\n&quot;)
+    print(&quot;=&quot; * 70 + &quot;\n&quot;)
+
+
+if __name__ == &quot;__main__&quot;:
+    logger.info(&quot;=== Iniciando Pipeline de Datos Capstone Reddit NLP ===&quot;)
+    df_final = process_and_save(output_csv=DATA_DIR / &quot;demo_seguro.csv&quot;,
+                                output_parquet=DATA_DIR / &quot;demo_seguro.parquet&quot;)
+    print_corpus_summary(df_final)
+    logger.info(&quot;=== Pipeline ejecutado con éxito ===&quot;)
+</pre>
+<h2>experiment.py</h2><pre>&quot;&quot;&quot;Particiones por hilo y evaluación reproducible sin selección sobre prueba.&quot;&quot;&quot;
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import GroupShuffleSplit
+from sklearn.metrics import (accuracy_score, balanced_accuracy_score, confusion_matrix,
+                             precision_recall_fscore_support, f1_score)
+
+CLASSES = [&quot;Odio&quot;, &quot;Ofensivo&quot;, &quot;Neutro&quot;]
+
+
+def split_corpus(df, seed=42):
+    required = {&quot;id_comentario&quot;, &quot;id_hilo&quot;, &quot;texto_limpio&quot;, &quot;etiqueta&quot;, &quot;idioma&quot;, &quot;subreddit&quot;, &quot;tipo_contenido&quot;}
+    if required - set(df):
+        raise ValueError(&quot;Faltan campos para separar por hilo: &quot; + str(required - set(df)))
+    if df[list(required)].isna().any().any() or df.id_comentario.duplicated().any():
+        raise ValueError(&quot;Hay campos vacíos o identificadores repetidos.&quot;)
+    if df[list(required)].astype(str).apply(lambda c: c.str.strip()).eq(&quot;&quot;).any().any():
+        raise ValueError(&quot;Hay metadatos o textos vacíos.&quot;)
+    if not set(df.idioma).issubset({&quot;es&quot;, &quot;en&quot;}):
+        raise ValueError(&quot;El corpus debe contener solamente español e inglés revisados.&quot;)
+    if set(df.etiqueta) != set(CLASSES):
+        raise ValueError(&quot;Se requieren las tres clases anotadas.&quot;)
+    if df.texto_limpio.duplicated().any():
+        raise ValueError(&quot;Elimine textos duplicados antes de separar por hilo.&quot;)
+    if &quot;revision_idioma&quot; in df and df.revision_idioma.astype(str).str.lower().isin([&quot;true&quot;, &quot;1&quot;]).any():
+        raise ValueError(&quot;Resuelva la revisión de idioma antes de entrenar.&quot;)
+
+    def partition(frame, fraction, state):
+        splitter = GroupShuffleSplit(n_splits=200, test_size=fraction, random_state=state)
+        best = None
+        for left, right in splitter.split(frame, groups=frame.id_hilo):
+            if any(set(frame.iloc[idx].etiqueta) != set(CLASSES) for idx in (left, right)):
+                continue
+            score = abs(len(right) / len(frame) - fraction)
+            for col in [&quot;etiqueta&quot;, &quot;idioma&quot;, &quot;subreddit&quot;, &quot;tipo_contenido&quot;]:
+                target = frame[col].value_counts(normalize=True)
+                for idx in (left, right):
+                    observed = frame.iloc[idx][col].value_counts(normalize=True).reindex(target.index, fill_value=0)
+                    score += float((observed - target).abs().sum())
+            if best is None or score &lt; best[0]:
+                best = (score, left, right)
+        if best is None:
+            raise ValueError(&quot;No hay suficientes hilos y clases para formar tres particiones; amplíe el corpus.&quot;)
+        return frame.iloc[best[1]].copy(), frame.iloc[best[2]].copy()
+
+    train, temporary = partition(df, .30, seed)
+    val, test = partition(temporary, .50, seed + 1)
+    return {&quot;train&quot;: train, &quot;validation&quot;: val, &quot;test&quot;: test}
+
+
+def select_model(validation_scores):
+    if not validation_scores or not all(np.isfinite(v) for v in validation_scores.values()):
+        raise ValueError(&quot;Puntuaciones de validación inválidas.&quot;)
+    return max(validation_scores, key=validation_scores.get)
+
+
+def metrics_for(y_true, y_pred):
+    y_true, y_pred = np.asarray(y_true), np.asarray(y_pred)
+    precision, recall, f1, support = precision_recall_fscore_support(
+        y_true, y_pred, labels=CLASSES, zero_division=0)
+    cm = confusion_matrix(y_true, y_pred, labels=CLASSES)
+    per_class = {}
+    for i, label in enumerate(CLASSES):
+        tp, fn, fp = int(cm[i, i]), int(cm[i].sum() - cm[i, i]), int(cm[:, i].sum() - cm[i, i])
+        tn = len(y_true) - tp - fn - fp
+        per_class[label] = {&quot;precision&quot;: float(precision[i]), &quot;recall&quot;: float(recall[i]),
+                            &quot;f1&quot;: float(f1[i]), &quot;support&quot;: int(support[i]), &quot;fp&quot;: fp, &quot;fn&quot;: fn,
+                            &quot;fnr&quot;: fn / (tp + fn) if tp + fn else None,
+                            &quot;fpr&quot;: fp / (tn + fp) if tn + fp else None}
+    return {&quot;accuracy&quot;: float(accuracy_score(y_true, y_pred)),
+            &quot;balanced_accuracy&quot;: float(balanced_accuracy_score(y_true, y_pred)),
+            &quot;macro_f1&quot;: float(f1.mean()), &quot;per_class&quot;: per_class,
+            &quot;confusion_matrix&quot;: cm.tolist(), &quot;class_order&quot;: CLASSES,
+            &quot;n&quot;: len(y_true), &quot;missing_classes&quot;: [c for c in CLASSES if c not in set(y_true)]}
+
+
+def bootstrap_intervals(frame, predictions, samples=500, seed=42):
+    # Remuestreo de hilos completos para conservar la dependencia intrahilo.
+    rng = np.random.default_rng(seed)
+    groups = frame.id_hilo.to_numpy()
+    unique = np.unique(groups)
+    y, pred = frame.etiqueta.to_numpy(), np.asarray(predictions)
+    values = {&quot;macro_f1&quot;: [], &quot;precision_odio&quot;: [], &quot;recall_odio&quot;: [], &quot;fnr_odio&quot;: []}
+    for _ in range(samples):
+        idx = np.concatenate([np.flatnonzero(groups == g) for g in rng.choice(unique, len(unique), replace=True)])
+        values[&quot;macro_f1&quot;].append(float(f1_score(y[idx], pred[idx], labels=CLASSES, average=&quot;macro&quot;, zero_division=0)))
+        if np.any(y[idx] == &quot;Odio&quot;):
+            p, r, _, _ = precision_recall_fscore_support(y[idx], pred[idx], labels=[&quot;Odio&quot;], zero_division=0)
+            values[&quot;precision_odio&quot;].append(float(p[0]))
+            values[&quot;recall_odio&quot;].append(float(r[0]))
+            values[&quot;fnr_odio&quot;].append(float(1-r[0]))
+    return {key: {&quot;low&quot;: float(np.quantile(v, .025)), &quot;high&quot;: float(np.quantile(v, .975)), &quot;valid_samples&quot;: len(v)} if v else None for key, v in values.items()}
+
+
+def subgroup_metrics(frame, predictions):
+    result = {}
+    for column in [&quot;idioma&quot;, &quot;subreddit&quot;, &quot;tipo_contenido&quot;]:
+        result[column] = {}
+        for value in frame[column].unique():
+            mask = frame[column].to_numpy() == value
+            result[column][str(value)] = metrics_for(frame.etiqueta.to_numpy()[mask], np.asarray(predictions)[mask])
+    return result
+</pre>
+<h2>tests/test_laboratorio_unitarias.py</h2><pre>&quot;&quot;&quot;Diez casos unitarios identificables para el laboratorio académico.
+
+Las propiedades conservan entradas y salidas reales en el reporte JUnit XML.
+&quot;&quot;&quot;
+import pytest
+
+from data_pipeline import clean_and_anonymize
+from experiment import metrics_for, select_model
+
+
+def evidence(record_property, case, inputs, expected, observed):
+    for key, value in {&quot;caso&quot;: case, &quot;entrada&quot;: inputs, &quot;esperado&quot;: expected,
+                       &quot;observado&quot;: observed}.items():
+        record_property(key, str(value))
+
+
+def test_p01_normaliza_espacios(record_property):
+    actual = clean_and_anonymize(&quot;  Hola\n  mundo  &quot;)
+    evidence(record_property, &quot;P01&quot;, r&quot;  Hola\n  mundo  &quot;, &quot;Hola mundo&quot;, actual)
+    assert actual == &quot;Hola mundo&quot;
+
+
+def test_p02_oculta_correo(record_property):
+    actual = clean_and_anonymize(&quot;Escribe a persona@example.com&quot;)
+    evidence(record_property, &quot;P02&quot;, &quot;Escribe a persona@example.com&quot;, &quot;Escribe a [EMAIL]&quot;, actual)
+    assert actual == &quot;Escribe a [EMAIL]&quot;
+
+
+def test_p03_conserva_negacion_y_tildes(record_property):
+    text = &quot;No odio a nadie. Qué alegría.&quot;
+    actual = clean_and_anonymize(text)
+    evidence(record_property, &quot;P03&quot;, text, text, actual)
+    assert actual == text
+
+
+def test_p04_entrada_nula(record_property):
+    actual = clean_and_anonymize(None)
+    evidence(record_property, &quot;P04&quot;, &quot;None&quot;, repr(&quot;&quot;), repr(actual))
+    assert actual == &quot;&quot;
+
+
+def test_p05_texto_vacio(record_property):
+    actual = clean_and_anonymize(&quot;&quot;)
+    evidence(record_property, &quot;P05&quot;, repr(&quot;&quot;), repr(&quot;&quot;), repr(actual))
+    assert actual == &quot;&quot;
+
+
+def test_p06_elige_mayor_validacion(record_property):
+    scores = {&quot;modelo_a&quot;: 0.80, &quot;modelo_b&quot;: 0.30}
+    actual = select_model(scores)
+    evidence(record_property, &quot;P06&quot;, scores, &quot;modelo_a&quot;, actual)
+    assert actual == &quot;modelo_a&quot;
+
+
+def test_p07_rechaza_validacion_vacia(record_property):
+    with pytest.raises(ValueError, match=&quot;Puntuaciones de validación inválidas&quot;) as exc:
+        select_model({})
+    evidence(record_property, &quot;P07&quot;, &quot;{}&quot;, &quot;ValueError&quot;, type(exc.value).__name__)
+
+
+def test_p08_rechaza_nan(record_property):
+    with pytest.raises(ValueError, match=&quot;Puntuaciones de validación inválidas&quot;) as exc:
+        select_model({&quot;modelo_a&quot;: float(&quot;nan&quot;)})
+    evidence(record_property, &quot;P08&quot;, &quot;modelo_a: NaN&quot;, &quot;ValueError&quot;, type(exc.value).__name__)
+
+
+def test_p09_tasa_falsos_negativos(record_property):
+    actual = metrics_for([&quot;Odio&quot;, &quot;Odio&quot;, &quot;Neutro&quot;], [&quot;Odio&quot;, &quot;Neutro&quot;, &quot;Odio&quot;])[&quot;per_class&quot;][&quot;Odio&quot;][&quot;fnr&quot;]
+    evidence(record_property, &quot;P09&quot;, &quot;Real: Odio,Odio,Neutro; predicho: Odio,Neutro,Odio&quot;, 0.5, actual)
+    assert actual == pytest.approx(0.5, abs=1e-9)
+
+
+def test_p10_clase_sin_soporte(record_property):
+    actual = metrics_for([&quot;Neutro&quot;], [&quot;Neutro&quot;])[&quot;per_class&quot;][&quot;Odio&quot;][&quot;fnr&quot;]
+    evidence(record_property, &quot;P10&quot;, &quot;Real: Neutro; predicho: Neutro; FNR de Odio&quot;, &quot;None&quot;, actual)
+    assert actual is None
+</pre>
+<h2>tools/ejecutar_laboratorio.py</h2><pre>&quot;&quot;&quot;Ejecuta éxito, mutación controlada y restauración en una copia aislada.&quot;&quot;&quot;
+import argparse
+import csv
+import hashlib
+import json
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+import tempfile
+import xml.etree.ElementTree as ET
+from datetime import datetime, timezone
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def digest(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(&quot;--output&quot;, type=Path, default=ROOT / &quot;entregables/laboratorio_unitarias/evidencias&quot;)
+    args = parser.parse_args()
+    out = args.output.resolve()
+    out.mkdir(parents=True, exist_ok=True)
+    sources = [&quot;data_pipeline.py&quot;, &quot;experiment.py&quot;, &quot;tests/test_laboratorio_unitarias.py&quot;]
+    initial = {p: digest(ROOT / p) for p in sources}
+    summary = {&quot;fecha_utc&quot;: datetime.now(timezone.utc).isoformat(), &quot;python&quot;: sys.version,
+               &quot;fuentes_sha256&quot;: initial, &quot;ejecuciones&quot;: []}
+    original = (ROOT / &quot;experiment.py&quot;).read_text(encoding=&quot;utf-8&quot;)
+    before = &quot;return max(validation_scores, key=validation_scores.get)&quot;
+    after = &quot;return min(validation_scores, key=validation_scores.get)&quot;
+    if original.count(before) != 1:
+        raise RuntimeError(&quot;La función cambió; revise la mutación antes de ejecutarla.&quot;)
+    (out / &quot;mutacion.txt&quot;).write_text(&quot;Solo en copia temporal de experiment.py\n- &quot; + before + &quot;\n+ &quot; + after + &quot;\n&quot;, encoding=&quot;utf-8&quot;)
+    with tempfile.TemporaryDirectory(prefix=&quot;hatedetect_lab_&quot;) as directory:
+        copy = Path(directory)
+        for name in sources:
+            target = copy / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(ROOT / name, target)
+        env = dict(os.environ, PYTHONDONTWRITEBYTECODE=&quot;1&quot;, PYTHONIOENCODING=&quot;utf-8&quot;)
+        for phase in [&quot;01_correcto&quot;, &quot;02_fallo_controlado&quot;, &quot;03_restaurado&quot;]:
+            (copy / &quot;experiment.py&quot;).write_text(original.replace(before, after) if phase == &quot;02_fallo_controlado&quot; else original, encoding=&quot;utf-8&quot;)
+            xml = out / (phase + &quot;.xml&quot;)
+            command = [sys.executable, &quot;-B&quot;, &quot;-m&quot;, &quot;pytest&quot;, &quot;tests/test_laboratorio_unitarias.py&quot;, &quot;-v&quot;, &quot;-o&quot;, &quot;junit_family=xunit1&quot;, &quot;--junitxml=&quot; + str(xml)]
+            result = subprocess.run(command, cwd=copy, env=env, capture_output=True, text=True, encoding=&quot;utf-8&quot;)
+            (out / (phase + &quot;.txt&quot;)).write_text(result.stdout + result.stderr, encoding=&quot;utf-8&quot;)
+            if not xml.exists():
+                raise RuntimeError(result.stdout + result.stderr)
+            tree = ET.parse(xml)
+            cases = []
+            for case in tree.findall(&quot;.//testcase&quot;):
+                props = {p.attrib[&quot;name&quot;]: p.attrib[&quot;value&quot;] for p in case.findall(&quot;./properties/property&quot;)}
+                cases.append(dict(props, nombre=case.attrib[&quot;name&quot;], segundos=case.attrib[&quot;time&quot;], estado=&quot;FALLÓ&quot; if case.find(&quot;failure&quot;) is not None else &quot;ERROR&quot; if case.find(&quot;error&quot;) is not None else &quot;OMITIDO&quot; if case.find(&quot;skipped&quot;) is not None else &quot;PASÓ&quot;))
+            entry = {&quot;fase&quot;: phase, &quot;codigo_salida&quot;: result.returncode, &quot;casos&quot;: cases}
+            summary[&quot;ejecuciones&quot;].append(entry)
+            print(phase, &quot;exit=&quot;, result.returncode, &quot;casos=&quot;, len(cases), flush=True)
+    summary[&quot;fuentes_intactas&quot;] = all(digest(ROOT / p) == h for p, h in initial.items())
+    (out / &quot;resumen.json&quot;).write_text(json.dumps(summary, indent=2, ensure_ascii=False), encoding=&quot;utf-8&quot;)
+    with (out / &quot;matriz_final.csv&quot;).open(&quot;w&quot;, newline=&quot;&quot;, encoding=&quot;utf-8-sig&quot;) as handle:
+        fields = [&quot;caso&quot;, &quot;entrada&quot;, &quot;esperado&quot;, &quot;observado&quot;, &quot;estado&quot;, &quot;segundos&quot;]
+        writer = csv.DictWriter(handle, fieldnames=fields, extrasaction=&quot;ignore&quot;)
+        writer.writeheader()
+        writer.writerows(summary[&quot;ejecuciones&quot;][-1][&quot;casos&quot;])
+    expected = [[&quot;PASÓ&quot;] * 10, [&quot;PASÓ&quot;] * 5 + [&quot;FALLÓ&quot;] + [&quot;PASÓ&quot;] * 4, [&quot;PASÓ&quot;] * 10]
+    for entry, statuses, code in zip(summary[&quot;ejecuciones&quot;], expected, [0, 1, 0]):
+        if entry[&quot;codigo_salida&quot;] != code or [c[&quot;estado&quot;] for c in entry[&quot;casos&quot;]] != statuses:
+            raise RuntimeError(&quot;Resultado distinto al previsto. Revise &quot; + entry[&quot;fase&quot;])
+    if not summary[&quot;fuentes_intactas&quot;]:
+        raise RuntimeError(&quot;Las fuentes originales cambiaron durante la ejecución.&quot;)
+
+
+if __name__ == &quot;__main__&quot;:
+    main()
+</pre>
+<h2>01_correcto</h2><pre>============================= test session starts =============================
+platform win32 -- Python 3.13.14, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\user\Desktop\Capstone-Project-An-lisis-de-Discurso-de-Odio-UPN-\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\user\AppData\Local\Temp\hatedetect_lab_w0gzvoaf
+plugins: anyio-4.15.1
+collecting ... collected 10 items
+
+tests/test_laboratorio_unitarias.py::test_p01_normaliza_espacios PASSED  [ 10%]
+tests/test_laboratorio_unitarias.py::test_p02_oculta_correo PASSED       [ 20%]
+tests/test_laboratorio_unitarias.py::test_p03_conserva_negacion_y_tildes PASSED [ 30%]
+tests/test_laboratorio_unitarias.py::test_p04_entrada_nula PASSED        [ 40%]
+tests/test_laboratorio_unitarias.py::test_p05_texto_vacio PASSED         [ 50%]
+tests/test_laboratorio_unitarias.py::test_p06_elige_mayor_validacion PASSED [ 60%]
+tests/test_laboratorio_unitarias.py::test_p07_rechaza_validacion_vacia PASSED [ 70%]
+tests/test_laboratorio_unitarias.py::test_p08_rechaza_nan PASSED         [ 80%]
+tests/test_laboratorio_unitarias.py::test_p09_tasa_falsos_negativos PASSED [ 90%]
+tests/test_laboratorio_unitarias.py::test_p10_clase_sin_soporte PASSED   [100%]
+
+============================== warnings summary ===============================
+tests/test_laboratorio_unitarias.py::test_p10_clase_sin_soporte
+  C:\Users\user\Desktop\Capstone-Project-An-lisis-de-Discurso-de-Odio-UPN-\.venv\Lib\site-packages\sklearn\metrics\_classification.py:614: UserWarning: A single label was found in &#x27;y_true&#x27; and &#x27;y_pred&#x27;. For the confusion matrix to have the correct shape, use the &#x27;labels&#x27; parameter to pass all known labels.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+- generated xml file: C:\Users\user\Desktop\Capstone-Project-An-lisis-de-Discurso-de-Odio-UPN-\entregables\laboratorio_unitarias\evidencias\01_correcto.xml -
+======================= 10 passed, 1 warning in 15.08s ========================
+</pre>
+<h2>02_fallo_controlado</h2><pre>============================= test session starts =============================
+platform win32 -- Python 3.13.14, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\user\Desktop\Capstone-Project-An-lisis-de-Discurso-de-Odio-UPN-\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\user\AppData\Local\Temp\hatedetect_lab_w0gzvoaf
+plugins: anyio-4.15.1
+collecting ... collected 10 items
+
+tests/test_laboratorio_unitarias.py::test_p01_normaliza_espacios PASSED  [ 10%]
+tests/test_laboratorio_unitarias.py::test_p02_oculta_correo PASSED       [ 20%]
+tests/test_laboratorio_unitarias.py::test_p03_conserva_negacion_y_tildes PASSED [ 30%]
+tests/test_laboratorio_unitarias.py::test_p04_entrada_nula PASSED        [ 40%]
+tests/test_laboratorio_unitarias.py::test_p05_texto_vacio PASSED         [ 50%]
+tests/test_laboratorio_unitarias.py::test_p06_elige_mayor_validacion FAILED [ 60%]
+tests/test_laboratorio_unitarias.py::test_p07_rechaza_validacion_vacia PASSED [ 70%]
+tests/test_laboratorio_unitarias.py::test_p08_rechaza_nan PASSED         [ 80%]
+tests/test_laboratorio_unitarias.py::test_p09_tasa_falsos_negativos PASSED [ 90%]
+tests/test_laboratorio_unitarias.py::test_p10_clase_sin_soporte PASSED   [100%]
+
+================================== FAILURES ===================================
+_______________________ test_p06_elige_mayor_validacion _______________________
+
+record_property = &lt;function record_property.&lt;locals&gt;.append_property at 0x0000021034EBA520&gt;
+
+    def test_p06_elige_mayor_validacion(record_property):
+        scores = {&quot;modelo_a&quot;: 0.80, &quot;modelo_b&quot;: 0.30}
+        actual = select_model(scores)
+        evidence(record_property, &quot;P06&quot;, scores, &quot;modelo_a&quot;, actual)
+&gt;       assert actual == &quot;modelo_a&quot;
+E       AssertionError: assert &#x27;modelo_b&#x27; == &#x27;modelo_a&#x27;
+E         
+E         - modelo_a
+E         ?        ^
+E         + modelo_b
+E         ?        ^
+
+tests\test_laboratorio_unitarias.py:52: AssertionError
+============================== warnings summary ===============================
+tests/test_laboratorio_unitarias.py::test_p10_clase_sin_soporte
+  C:\Users\user\Desktop\Capstone-Project-An-lisis-de-Discurso-de-Odio-UPN-\.venv\Lib\site-packages\sklearn\metrics\_classification.py:614: UserWarning: A single label was found in &#x27;y_true&#x27; and &#x27;y_pred&#x27;. For the confusion matrix to have the correct shape, use the &#x27;labels&#x27; parameter to pass all known labels.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+- generated xml file: C:\Users\user\Desktop\Capstone-Project-An-lisis-de-Discurso-de-Odio-UPN-\entregables\laboratorio_unitarias\evidencias\02_fallo_controlado.xml -
+=========================== short test summary info ===========================
+FAILED tests/test_laboratorio_unitarias.py::test_p06_elige_mayor_validacion
+=================== 1 failed, 9 passed, 1 warning in 1.67s ====================
+</pre>
+<h2>03_restaurado</h2><pre>============================= test session starts =============================
+platform win32 -- Python 3.13.14, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\user\Desktop\Capstone-Project-An-lisis-de-Discurso-de-Odio-UPN-\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\user\AppData\Local\Temp\hatedetect_lab_w0gzvoaf
+plugins: anyio-4.15.1
+collecting ... collected 10 items
+
+tests/test_laboratorio_unitarias.py::test_p01_normaliza_espacios PASSED  [ 10%]
+tests/test_laboratorio_unitarias.py::test_p02_oculta_correo PASSED       [ 20%]
+tests/test_laboratorio_unitarias.py::test_p03_conserva_negacion_y_tildes PASSED [ 30%]
+tests/test_laboratorio_unitarias.py::test_p04_entrada_nula PASSED        [ 40%]
+tests/test_laboratorio_unitarias.py::test_p05_texto_vacio PASSED         [ 50%]
+tests/test_laboratorio_unitarias.py::test_p06_elige_mayor_validacion PASSED [ 60%]
+tests/test_laboratorio_unitarias.py::test_p07_rechaza_validacion_vacia PASSED [ 70%]
+tests/test_laboratorio_unitarias.py::test_p08_rechaza_nan PASSED         [ 80%]
+tests/test_laboratorio_unitarias.py::test_p09_tasa_falsos_negativos PASSED [ 90%]
+tests/test_laboratorio_unitarias.py::test_p10_clase_sin_soporte PASSED   [100%]
+
+============================== warnings summary ===============================
+tests/test_laboratorio_unitarias.py::test_p10_clase_sin_soporte
+  C:\Users\user\Desktop\Capstone-Project-An-lisis-de-Discurso-de-Odio-UPN-\.venv\Lib\site-packages\sklearn\metrics\_classification.py:614: UserWarning: A single label was found in &#x27;y_true&#x27; and &#x27;y_pred&#x27;. For the confusion matrix to have the correct shape, use the &#x27;labels&#x27; parameter to pass all known labels.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+- generated xml file: C:\Users\user\Desktop\Capstone-Project-An-lisis-de-Discurso-de-Odio-UPN-\entregables\laboratorio_unitarias\evidencias\03_restaurado.xml -
+======================== 10 passed, 1 warning in 1.33s ========================
+</pre></html>

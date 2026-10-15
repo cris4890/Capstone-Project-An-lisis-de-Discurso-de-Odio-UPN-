@@ -1,0 +1,6 @@
+Laboratorio adaptado a Python y pytest.
+Abra el informe Word y evidencias.html. Los registros TXT/XML y la matriz CSV están en evidencias.
+Las fuentes se incluyen como referencia; para reproducir use el repositorio completo y su entorno .venv.
+Ejecute: .\.venv\Scripts\python.exe tools/ejecutar_laboratorio.py
+El fallo didáctico afecta únicamente una copia temporal.
+La aceptación de la adaptación tecnológica y las capturas adicionales corresponde al docente.

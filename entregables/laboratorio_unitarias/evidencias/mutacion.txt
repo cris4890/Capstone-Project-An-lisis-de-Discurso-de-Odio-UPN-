@@ -1,0 +1,3 @@
+Solo en copia temporal de experiment.py
+- return max(validation_scores, key=validation_scores.get)
++ return min(validation_scores, key=validation_scores.get)

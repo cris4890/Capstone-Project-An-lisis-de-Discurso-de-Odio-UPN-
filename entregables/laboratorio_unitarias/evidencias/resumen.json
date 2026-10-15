@@ -1,0 +1,300 @@
+{
+  "fecha_utc": "2026-10-15T01:29:59.077771+00:00",
+  "python": "3.13.14 (tags/v3.13.14:fd17997, Jun 10 2026, 13:03:48) [MSC v.1944 64 bit (AMD64)]",
+  "fuentes_sha256": {
+    "data_pipeline.py": "6f52903da42e373a5ed0292363da1510c547b5a087e23ca3a2f9c5b63878fea3",
+    "experiment.py": "7a39bc89f668f3414b5cb90f2bff6ab22b3a51e419a038e03eae55101505e382",
+    "tests/test_laboratorio_unitarias.py": "e531014509e277bc178d4be282214cb74030a300c6c07f6afb972d3ca79889f2"
+  },
+  "ejecuciones": [
+    {
+      "fase": "01_correcto",
+      "codigo_salida": 0,
+      "casos": [
+        {
+          "caso": "P01",
+          "entrada": "  Hola\\n  mundo  ",
+          "esperado": "Hola mundo",
+          "observado": "Hola mundo",
+          "nombre": "test_p01_normaliza_espacios",
+          "segundos": "0.001",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "P02",
+          "entrada": "Escribe a persona@example.com",
+          "esperado": "Escribe a [EMAIL]",
+          "observado": "Escribe a [EMAIL]",
+          "nombre": "test_p02_oculta_correo",
+          "segundos": "0.001",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "P03",
+          "entrada": "No odio a nadie. Qué alegría.",
+          "esperado": "No odio a nadie. Qué alegría.",
+          "observado": "No odio a nadie. Qué alegría.",
+          "nombre": "test_p03_conserva_negacion_y_tildes",
+          "segundos": "0.001",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "P04",
+          "entrada": "None",
+          "esperado": "''",
+          "observado": "''",
+          "nombre": "test_p04_entrada_nula",
+          "segundos": "0.000",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "P05",
+          "entrada": "''",
+          "esperado": "''",
+          "observado": "''",
+          "nombre": "test_p05_texto_vacio",
+          "segundos": "0.000",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "P06",
+          "entrada": "{'modelo_a': 0.8, 'modelo_b': 0.3}",
+          "esperado": "modelo_a",
+          "observado": "modelo_a",
+          "nombre": "test_p06_elige_mayor_validacion",
+          "segundos": "0.000",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "P07",
+          "entrada": "{}",
+          "esperado": "ValueError",
+          "observado": "ValueError",
+          "nombre": "test_p07_rechaza_validacion_vacia",
+          "segundos": "0.001",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "P08",
+          "entrada": "modelo_a: NaN",
+          "esperado": "ValueError",
+          "observado": "ValueError",
+          "nombre": "test_p08_rechaza_nan",
+          "segundos": "0.000",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "P09",
+          "entrada": "Real: Odio,Odio,Neutro; predicho: Odio,Neutro,Odio",
+          "esperado": "0.5",
+          "observado": "0.5",
+          "nombre": "test_p09_tasa_falsos_negativos",
+          "segundos": "0.016",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "P10",
+          "entrada": "Real: Neutro; predicho: Neutro; FNR de Odio",
+          "esperado": "None",
+          "observado": "None",
+          "nombre": "test_p10_clase_sin_soporte",
+          "segundos": "0.003",
+          "estado": "PASÓ"
+        }
+      ]
+    },
+    {
+      "fase": "02_fallo_controlado",
+      "codigo_salida": 1,
+      "casos": [
+        {
+          "caso": "P01",
+          "entrada": "  Hola\\n  mundo  ",
+          "esperado": "Hola mundo",
+          "observado": "Hola mundo",
+          "nombre": "test_p01_normaliza_espacios",
+          "segundos": "0.001",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "P02",
+          "entrada": "Escribe a persona@example.com",
+          "esperado": "Escribe a [EMAIL]",
+          "observado": "Escribe a [EMAIL]",
+          "nombre": "test_p02_oculta_correo",
+          "segundos": "0.000",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "P03",
+          "entrada": "No odio a nadie. Qué alegría.",
+          "esperado": "No odio a nadie. Qué alegría.",
+          "observado": "No odio a nadie. Qué alegría.",
+          "nombre": "test_p03_conserva_negacion_y_tildes",
+          "segundos": "0.000",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "P04",
+          "entrada": "None",
+          "esperado": "''",
+          "observado": "''",
+          "nombre": "test_p04_entrada_nula",
+          "segundos": "0.000",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "P05",
+          "entrada": "''",
+          "esperado": "''",
+          "observado": "''",
+          "nombre": "test_p05_texto_vacio",
+          "segundos": "0.000",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "P06",
+          "entrada": "{'modelo_a': 0.8, 'modelo_b': 0.3}",
+          "esperado": "modelo_a",
+          "observado": "modelo_b",
+          "nombre": "test_p06_elige_mayor_validacion",
+          "segundos": "0.001",
+          "estado": "FALLÓ"
+        },
+        {
+          "caso": "P07",
+          "entrada": "{}",
+          "esperado": "ValueError",
+          "observado": "ValueError",
+          "nombre": "test_p07_rechaza_validacion_vacia",
+          "segundos": "0.001",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "P08",
+          "entrada": "modelo_a: NaN",
+          "esperado": "ValueError",
+          "observado": "ValueError",
+          "nombre": "test_p08_rechaza_nan",
+          "segundos": "0.000",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "P09",
+          "entrada": "Real: Odio,Odio,Neutro; predicho: Odio,Neutro,Odio",
+          "esperado": "0.5",
+          "observado": "0.5",
+          "nombre": "test_p09_tasa_falsos_negativos",
+          "segundos": "0.012",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "P10",
+          "entrada": "Real: Neutro; predicho: Neutro; FNR de Odio",
+          "esperado": "None",
+          "observado": "None",
+          "nombre": "test_p10_clase_sin_soporte",
+          "segundos": "0.004",
+          "estado": "PASÓ"
+        }
+      ]
+    },
+    {
+      "fase": "03_restaurado",
+      "codigo_salida": 0,
+      "casos": [
+        {
+          "caso": "P01",
+          "entrada": "  Hola\\n  mundo  ",
+          "esperado": "Hola mundo",
+          "observado": "Hola mundo",
+          "nombre": "test_p01_normaliza_espacios",
+          "segundos": "0.001",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "P02",
+          "entrada": "Escribe a persona@example.com",
+          "esperado": "Escribe a [EMAIL]",
+          "observado": "Escribe a [EMAIL]",
+          "nombre": "test_p02_oculta_correo",
+          "segundos": "0.000",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "P03",
+          "entrada": "No odio a nadie. Qué alegría.",
+          "esperado": "No odio a nadie. Qué alegría.",
+          "observado": "No odio a nadie. Qué alegría.",
+          "nombre": "test_p03_conserva_negacion_y_tildes",
+          "segundos": "0.000",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "P04",
+          "entrada": "None",
+          "esperado": "''",
+          "observado": "''",
+          "nombre": "test_p04_entrada_nula",
+          "segundos": "0.000",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "P05",
+          "entrada": "''",
+          "esperado": "''",
+          "observado": "''",
+          "nombre": "test_p05_texto_vacio",
+          "segundos": "0.000",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "P06",
+          "entrada": "{'modelo_a': 0.8, 'modelo_b': 0.3}",
+          "esperado": "modelo_a",
+          "observado": "modelo_a",
+          "nombre": "test_p06_elige_mayor_validacion",
+          "segundos": "0.000",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "P07",
+          "entrada": "{}",
+          "esperado": "ValueError",
+          "observado": "ValueError",
+          "nombre": "test_p07_rechaza_validacion_vacia",
+          "segundos": "0.001",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "P08",
+          "entrada": "modelo_a: NaN",
+          "esperado": "ValueError",
+          "observado": "ValueError",
+          "nombre": "test_p08_rechaza_nan",
+          "segundos": "0.001",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "P09",
+          "entrada": "Real: Odio,Odio,Neutro; predicho: Odio,Neutro,Odio",
+          "esperado": "0.5",
+          "observado": "0.5",
+          "nombre": "test_p09_tasa_falsos_negativos",
+          "segundos": "0.016",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "P10",
+          "entrada": "Real: Neutro; predicho: Neutro; FNR de Odio",
+          "esperado": "None",
+          "observado": "None",
+          "nombre": "test_p10_clase_sin_soporte",
+          "segundos": "0.004",
+          "estado": "PASÓ"
+        }
+      ]
+    }
+  ],
+  "fuentes_intactas": true
+}
