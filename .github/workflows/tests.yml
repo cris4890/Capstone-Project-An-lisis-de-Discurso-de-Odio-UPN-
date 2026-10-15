@@ -15,9 +15,13 @@ jobs:
           python-version: "3.13"
           cache: pip
       - run: python -m pip install -r requirements.lock.txt
-      - run: python -m pytest -q --junitxml=test-results.xml
+      - run: python -m pytest -q -o junit_family=xunit1 --junitxml=test-results.xml
+      - name: Laboratorio con fallo controlado y restauracion
+        run: python tools/ejecutar_laboratorio.py --output test-results/laboratorio
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: resultados-pruebas
-          path: test-results.xml
+          path: |
+            test-results.xml
+            test-results/laboratorio/

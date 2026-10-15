@@ -1,26 +1,20 @@
 ============================= test session starts =============================
 platform win32 -- Python 3.13.14, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\user\Desktop\Capstone-Project-An-lisis-de-Discurso-de-Odio-UPN-\.venv\Scripts\python.exe
 cachedir: .pytest_cache
-rootdir: C:\Users\user\AppData\Local\Temp\hatedetect_lab_w0gzvoaf
+rootdir: C:\Users\user\AppData\Local\Temp\hatedetect_lab_b5d2ex6b
 plugins: anyio-4.15.1
 collecting ... collected 10 items
 
 tests/test_laboratorio_unitarias.py::test_p01_normaliza_espacios PASSED  [ 10%]
 tests/test_laboratorio_unitarias.py::test_p02_oculta_correo PASSED       [ 20%]
-tests/test_laboratorio_unitarias.py::test_p03_conserva_negacion_y_tildes PASSED [ 30%]
-tests/test_laboratorio_unitarias.py::test_p04_entrada_nula PASSED        [ 40%]
-tests/test_laboratorio_unitarias.py::test_p05_texto_vacio PASSED         [ 50%]
-tests/test_laboratorio_unitarias.py::test_p06_elige_mayor_validacion PASSED [ 60%]
-tests/test_laboratorio_unitarias.py::test_p07_rechaza_validacion_vacia PASSED [ 70%]
-tests/test_laboratorio_unitarias.py::test_p08_rechaza_nan PASSED         [ 80%]
-tests/test_laboratorio_unitarias.py::test_p09_tasa_falsos_negativos PASSED [ 90%]
-tests/test_laboratorio_unitarias.py::test_p10_clase_sin_soporte PASSED   [100%]
+tests/test_laboratorio_unitarias.py::test_p03_oculta_telefono PASSED     [ 30%]
+tests/test_laboratorio_unitarias.py::test_p04_entrada_numerica PASSED    [ 40%]
+tests/test_laboratorio_unitarias.py::test_p05_clasifica_insulto PASSED   [ 50%]
+tests/test_laboratorio_unitarias.py::test_p06_cuenta_categorias PASSED   [ 60%]
+tests/test_laboratorio_unitarias.py::test_p07_porcentaje_odio PASSED     [ 70%]
+tests/test_laboratorio_unitarias.py::test_p08_etiqueta_invalida PASSED   [ 80%]
+tests/test_laboratorio_unitarias.py::test_p09_precision_odio PASSED      [ 90%]
+tests/test_laboratorio_unitarias.py::test_p10_tiempo_promedio PASSED     [100%]
 
-============================== warnings summary ===============================
-tests/test_laboratorio_unitarias.py::test_p10_clase_sin_soporte
-  C:\Users\user\Desktop\Capstone-Project-An-lisis-de-Discurso-de-Odio-UPN-\.venv\Lib\site-packages\sklearn\metrics\_classification.py:614: UserWarning: A single label was found in 'y_true' and 'y_pred'. For the confusion matrix to have the correct shape, use the 'labels' parameter to pass all known labels.
-    warnings.warn(
-
--- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
 - generated xml file: C:\Users\user\Desktop\Capstone-Project-An-lisis-de-Discurso-de-Odio-UPN-\entregables\laboratorio_unitarias\evidencias\01_correcto.xml -
-======================= 10 passed, 1 warning in 15.08s ========================
+============================= 10 passed in 46.32s =============================

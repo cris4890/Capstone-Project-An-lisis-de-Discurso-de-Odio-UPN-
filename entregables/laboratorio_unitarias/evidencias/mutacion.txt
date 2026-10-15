@@ -1,3 +1,3 @@
-Solo en copia temporal de experiment.py
-- return max(validation_scores, key=validation_scores.get)
-+ return min(validation_scores, key=validation_scores.get)
+Solo en copia temporal de report_calculations.py
+- return fsum(values) / len(values)
++ return fsum(values)

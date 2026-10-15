@@ -3,6 +3,7 @@ from pathlib import Path
 import html
 import json
 import shutil
+from datetime import datetime, timezone, timedelta
 import xml.etree.ElementTree as ET
 from docx import Document
 from docx.shared import Inches, Pt, RGBColor
@@ -13,6 +14,9 @@ ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "entregables/laboratorio_unitarias"
 EV = OUT / "evidencias"
 summary = json.loads((EV / "resumen.json").read_text(encoding="utf-8"))
+local_date = datetime.fromisoformat(summary["fecha_utc"]).astimezone(timezone(timedelta(hours=-5)))
+months = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
+date_label = f"{local_date.day} de {months[local_date.month - 1]} de {local_date.year}"
 suite = ET.parse(EV / "suite_completa.xml").find("testsuite")
 assert suite is not None
 total, failures, errors = [int(suite.get(k, "0")) for k in ["tests", "failures", "errors"]]
@@ -36,7 +40,7 @@ header = section.header.paragraphs[0]
 header.text = "UPN  |  HateDetect  |  Laboratorio de pruebas unitarias"
 header.runs[0].font.size = Pt(9)
 footer = section.footer.paragraphs[0]
-footer.text = "14 de octubre de 2026                                                 Página "
+footer.text = date_label + "                                                 Página "
 field = OxmlElement("w:fldSimple")
 field.set(qn("w:instr"), "PAGE")
 footer._p.append(field)
@@ -89,9 +93,9 @@ def table(headers, rows):
 doc.add_heading("Pruebas unitarias de HateDetect", 0)
 p("Informe de laboratorio adaptado al proyecto en Python")
 p("Proyecto: Análisis y clasificación automática del discurso de odio en comunidades de Reddit r/Millennials y r/GenZ.")
-p("Presentado por Jeanpierre Amilcar Casimiro Guerra. Universidad Privada del Norte. Fecha de ejecución local: 14 de octubre de 2026.")
+p(f"Presentado por Jeanpierre Amilcar Casimiro Guerra. Universidad Privada del Norte. Fecha de ejecución local: {date_label}.")
 h("Objetivo y resultado")
-p("Verificamos diez comportamientos unitarios de HateDetect mediante pytest. La ejecución inicial aprobó los diez casos. Al introducir un defecto en una copia aislada, una prueba detectó la selección incorrecta del modelo. Después de restaurar esa copia, los diez casos volvieron a aprobarse. Los archivos originales conservaron sus hashes SHA256.")
+p("Verificamos diez comportamientos unitarios mediante entradas de texto y números: limpieza, anonimización, clasificación, conteo, validación y cálculos. La ejecución inicial aprobó los diez casos. Una prueba detectó el cálculo incorrecto del promedio en una copia aislada. Al restaurarla, los diez casos volvieron a aprobarse. Las fuentes originales conservaron sus hashes SHA256.")
 p(f"La suite completa registró {total} pruebas, {failures} fallos y {errors} errores. Esta suite combina pruebas unitarias y otras comprobaciones de integración e interfaz; no se presenta su totalidad como pruebas unitarias.")
 h("Adaptación de la guía del docente")
 p("La guía proporcionada utiliza Java, Maven y JUnit en Apache NetBeans 28 con un sistema de ventas. Este informe aplica sus objetivos de diseño, ejecución, detección de fallos y regresión al sistema real desarrollado en Python. La aceptación de esta equivalencia tecnológica corresponde al docente; no consta su aprobación en este informe.")
@@ -100,10 +104,10 @@ table(["Guía de laboratorio", "Aplicación en HateDetect"], [
     ["JUnit y métodos @Test", "pytest y diez funciones test_p01 a test_p10"],
     ["assertEquals y assertThrows", "assert, pytest.approx y pytest.raises"],
     ["Maven Surefire y reportes XML", "pytest con --junitxml y registros TXT"],
-    ["Defecto en el cálculo de IGV", "Mutación max a min en select_model"],
+    ["Defecto en el cálculo de IGV", "Omitir la división al calcular el tiempo promedio"],
 ])
 h("Alcance de las pruebas")
-p("Los casos invocan funciones directamente, sin abrir Streamlit, conectar con Reddit ni acceder a una base de datos. Cubren resultados normales, entradas límite, excepciones y una métrica numérica. No miden carga concurrente ni la exactitud del clasificador sobre un corpus real.")
+p("Los casos invocan funciones directamente, sin abrir Streamlit, conectar con Reddit ni acceder a una base de datos. PU01 a PU05 utilizan la limpieza y las reglas existentes. PU06 a PU10 utilizan el nuevo módulo reutilizable report_calculations.py, incorporado para estos cálculos y todavía sin conexión a la interfaz. No miden carga concurrente ni exactitud sobre un corpus real.")
 
 doc.add_page_break()
 h("Matriz de diez casos unitarios")
@@ -113,20 +117,21 @@ table(["Caso", "Entrada", "Esperado", "Observado", "Estado"], [
     [c["caso"], c["entrada"], c["esperado"], c["observado"], c["estado"]] for c in cases
 ])
 h("Criterios de comprobación")
-p("P01 a P05 verifican la limpieza y conservación del texto, incluido el ocultamiento de un correo ficticio. P06 exige seleccionar la puntuación de validación más alta. P07 y P08 comprueban que las entradas inválidas generen ValueError.")
-p("P09 verifica FNR = FN / (TP + FN): un falso negativo entre dos ejemplos reales de Odio produce 0,5. Utiliza pytest.approx con tolerancia absoluta de 10⁻⁹. P10 comprueba que, sin ejemplos reales de Odio, su FNR sea None y no un cero que sugiera desempeño perfecto.")
-p("P10 genera una advertencia de scikit-learn por trabajar con una sola clase. La ejecución registra esa advertencia y la prueba pasa; no se oculta ni se confunde con un error.")
+p("PU01 elimina espacios sobrantes; PU02 y PU03 ocultan un correo y un teléfono ficticios. PU04 comprueba que el número 12345 se trate como una entrada no textual y produzca una cadena vacía. PU05 llama directamente al clasificador de reglas y espera Ofensivo para el insulto indicado.")
+p("PU06 cuenta las tres categorías. PU07 calcula 3 / 10 × 100 = 30 %. PU08 exige ValueError con el mensaje Etiqueta inválida al recibir Violento. PU09 calcula precisión = VP / (VP + FP) × 100: con 6 verdaderos positivos y 2 falsos positivos obtiene 75 %.")
+p("PU10 calcula (0,20 + 0,30 + 0,40) / 3 = 0,30 segundos. Son tiempos de entrada conocidos; no son latencias medidas del clasificador. Los cálculos usan pytest.approx con tolerancia absoluta de 10⁻⁹. Las validaciones adicionales de límites se ejecutan aparte, en la suite completa.")
 
 doc.add_page_break()
 h("Demostración del fallo y la corrección")
 table(["Ejecución", "Aprobadas", "Fallidas", "Salida"], [[e["fase"], sum(c["estado"] == "PASÓ" for c in e["casos"]), sum(c["estado"] == "FALLÓ" for c in e["casos"]), e["codigo_salida"]] for e in summary["ejecuciones"]])
-p("El ejecutor copia data_pipeline.py, experiment.py y los diez casos a una carpeta temporal. Solo allí sustituye la selección del máximo por la del mínimo. La mutación es un defecto didáctico, no un defecto que estuviera presente en producción.")
-code("Correcto: return max(validation_scores, key=validation_scores.get)\nDefecto:  return min(validation_scores, key=validation_scores.get)")
-p("Con modelo_a = 0,80 y modelo_b = 0,30, P06 esperaba modelo_a. La versión alterada devolvió modelo_b y pytest produjo AssertionError. El registro 02_fallo_controlado.txt conserva la traza completa.")
-code("E  AssertionError: assert 'modelo_b' == 'modelo_a'\n1 failed, 9 passed")
-p("La tercera ejecución restauró el contenido original de experiment.py en la copia temporal. P06 volvió a pasar y el resultado final fue de diez casos aprobados. El archivo resumen.json contiene los hashes de las fuentes y fuentes_intactas = true.")
+p("El ejecutor copia los módulos necesarios y los diez casos a una carpeta temporal. Solo allí modifica average_latency en report_calculations.py para devolver la suma sin dividir entre la cantidad de tiempos. La mutación es un defecto didáctico, no un defecto previo del sistema.")
+code("Correcto: return fsum(values) / len(values)\nDefecto:  return fsum(values)")
+p("Con tiempos de 0,20; 0,30 y 0,40 segundos, PU10 esperaba 0,30. La versión alterada devolvió 0,90 y pytest produjo AssertionError. El registro 02_fallo_controlado.txt conserva la traza completa.")
+code("Esperado: 0.30 segundos\nObtenido con el defecto: 0.90 segundos\n1 failed, 9 passed")
+p("La tercera ejecución restauró report_calculations.py en la copia temporal. PU10 volvió a pasar y el resultado final fue de diez casos aprobados. El archivo resumen.json contiene los hashes de las fuentes y fuentes_intactas = true.")
 h("Código de la prueba que detecta el defecto")
-code('def test_p06_elige_mayor_validacion(record_property):\n    scores = {"modelo_a": 0.80, "modelo_b": 0.30}\n    actual = select_model(scores)\n    evidence(record_property, "P06", scores, "modelo_a", actual)\n    assert actual == "modelo_a"')
+code('actual = average_latency([0.20, 0.30, 0.40])\nassert actual == pytest.approx(0.30, rel=0, abs=1e-9)')
+p("Extracto de PU10. El archivo de pruebas también registra la entrada, el resultado esperado y el observado mediante record_property para incorporarlos al XML.")
 h("Interpretación de las aserciones")
 p("assert compara el resultado observado con el esperado. pytest.approx permite comparar valores numéricos considerando tolerancia. pytest.raises verifica tanto el tipo de excepción como, en estos casos, parte de su mensaje. Si no ocurre la excepción prevista, la prueba falla.")
 p("Una prueba unitaria revisa una función de manera acotada; una prueba de integración comprueba la colaboración entre componentes. Las pruebas de rendimiento estudian latencia, volumen o concurrencia. Los tiempos registrados por pytest no equivalen a una prueba de carga con JMeter.")
@@ -142,7 +147,7 @@ table(["Archivo o carpeta", "Contenido verificable"], [
     ["tests/test_laboratorio_unitarias.py", "Diez casos y propiedades de entrada y salida"],
     ["tools/ejecutar_laboratorio.py", "Ejecución aislada y validación de las tres fases"],
     ["evidencias/01_correcto y 03_restaurado", "Reportes TXT y XML con diez casos aprobados"],
-    ["evidencias/02_fallo_controlado", "Reportes TXT y XML con el fallo P06"],
+    ["evidencias/02_fallo_controlado", "Reportes TXT y XML con el fallo PU10"],
     ["evidencias/matriz_final.csv y resumen.json", "Matriz y trazabilidad mediante SHA256"],
     ["evidencias/suite_completa.xml y .txt", f"Suite completa de {total} pruebas"],
     ["evidencias.html", "Vista local del código y los registros originales"],
@@ -156,13 +161,36 @@ p("Fuente académica: Guía práctica de pruebas unitarias con Apache NetBeans 2
 doc.save(OUT / "Informe_pruebas_unitarias_HateDetect.docx")
 
 parts = ['<!doctype html><html lang="es"><meta charset="utf-8"><title>Evidencias del laboratorio HateDetect</title><style>body{font:16px system-ui;max-width:1100px;margin:40px auto;padding:20px;color:#17202a}pre{background:#f1f3f5;padding:20px;overflow:auto;font:13px Consolas,monospace}h2{margin-top:40px}</style><h1>Evidencias del laboratorio HateDetect</h1><p>Fuentes y registros reales de ejecución. Esta vista no es una captura de pantalla de un IDE.</p>']
-sources = ["data_pipeline.py", "experiment.py", "tests/test_laboratorio_unitarias.py", "tools/ejecutar_laboratorio.py"]
+sources = ["data_pipeline.py", "context_rules.py", "model_classes.py", "report_calculations.py", "tests/test_laboratorio_unitarias.py", "tests/test_report_calculations.py", "tools/ejecutar_laboratorio.py"]
 parts.append("<h2>Estructura del laboratorio</h2><pre>" + html.escape("\n".join(sources)) + "</pre>")
 for name in sources:
     parts.append("<h2>" + html.escape(name) + "</h2><pre>" + html.escape((ROOT / name).read_text(encoding="utf-8")) + "</pre>")
 for name in ["01_correcto", "02_fallo_controlado", "03_restaurado"]:
     parts.append("<h2>" + name + "</h2><pre>" + html.escape((EV / (name + ".txt")).read_text(encoding="utf-8")) + "</pre>")
 (OUT / "evidencias.html").write_text("\n".join(parts) + "</html>", encoding="utf-8")
+readme = ["# Laboratorio de diez pruebas unitarias", "",
+          f"Actualizado el {date_label}. Resultados de ejecución local; GitHub Actions ejecuta su propia comprobación.", "",
+          "| Caso | Entrada | Esperado | Observado | Estado |",
+          "| --- | --- | --- | --- | --- |"]
+for case in cases:
+    readme.append("| " + " | ".join(case[k].replace("|", "\\|").replace("\n", " ") for k in ["caso", "entrada", "esperado", "observado", "estado"]) + " |")
+readme += ["", "## Evidencias", "",
+           "- [Ejecución inicial](evidencias/01_correcto.txt): 10 aprobadas.",
+           "- [Fallo controlado](evidencias/02_fallo_controlado.txt): 9 aprobadas y PU10 fallida (suma sin dividir).",
+           "- [Restauración](evidencias/03_restaurado.txt): 10 aprobadas.",
+           f"- [Suite completa](evidencias/suite_completa.txt): {total} pruebas, {failures} fallos y {errors} errores.",
+           "- [Informe Word](Informe_pruebas_unitarias_HateDetect.docx) y [matriz CSV](evidencias/matriz_final.csv).", "",
+           "## Probar otras entradas", "",
+           "Desde la raíz del repositorio, modifica las variables de entrada y el resultado esperado en `tests/test_laboratorio_unitarias.py`. Luego ejecuta:", "",
+           "```powershell", ".\\.venv\\Scripts\\python.exe -m pytest tests/test_laboratorio_unitarias.py -v", "```", "",
+           "Para una sola prueba añade, por ejemplo, `-k test_p10_tiempo_promedio`. pytest no solicita datos interactivamente: los casos son reproducibles y sus entradas están en el archivo.", "",
+           "PU01–PU05 usan la limpieza y el clasificador de reglas existentes. PU06–PU10 usan el nuevo módulo `report_calculations.py`, todavía sin conexión a la interfaz. Los porcentajes se expresan de 0 a 100 y los tiempos en segundos.", "",
+           "El promedio de PU10 usa tiempos de ejemplo; no mide el rendimiento real. Las comprobaciones de entradas negativas, vacías y no finitas están separadas en `tests/test_report_calculations.py`.", "",
+           "El laboratorio no modifica cómo se selecciona el modelo del sistema. Tampoco corrige los falsos negativos del clasificador.", "",
+           "## Reproducir las tres fases", "", "```powershell", ".\\.venv\\Scripts\\python.exe tools/ejecutar_laboratorio.py", "```", "",
+           "La mutación afecta únicamente una copia temporal y se comprueba la integridad de los originales. Usa `--output otra_carpeta` para conservar reportes previos.", "",
+           "GitHub Actions ejecuta la suite y las tres fases. Los reportes automáticos se descargan desde el artefacto `resultados-pruebas`; no reemplazan automáticamente estos registros locales."]
+(OUT / "README.md").write_text("\n".join(readme) + "\n", encoding="utf-8")
 for name in sources + ["requirements.lock.txt", "pytest.ini"]:
     target = OUT / "fuentes" / name
     target.parent.mkdir(parents=True, exist_ok=True)

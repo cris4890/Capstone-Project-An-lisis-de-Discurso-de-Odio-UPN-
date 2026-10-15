@@ -25,16 +25,17 @@ def main():
     args = parser.parse_args()
     out = args.output.resolve()
     out.mkdir(parents=True, exist_ok=True)
-    sources = ["data_pipeline.py", "experiment.py", "tests/test_laboratorio_unitarias.py"]
+    sources = ["data_pipeline.py", "context_rules.py", "model_classes.py",
+               "report_calculations.py", "tests/test_laboratorio_unitarias.py"]
     initial = {p: digest(ROOT / p) for p in sources}
     summary = {"fecha_utc": datetime.now(timezone.utc).isoformat(), "python": sys.version,
                "fuentes_sha256": initial, "ejecuciones": []}
-    original = (ROOT / "experiment.py").read_text(encoding="utf-8")
-    before = "return max(validation_scores, key=validation_scores.get)"
-    after = "return min(validation_scores, key=validation_scores.get)"
+    original = (ROOT / "report_calculations.py").read_text(encoding="utf-8")
+    before = "return fsum(values) / len(values)"
+    after = "return fsum(values)"
     if original.count(before) != 1:
         raise RuntimeError("La función cambió; revise la mutación antes de ejecutarla.")
-    (out / "mutacion.txt").write_text("Solo en copia temporal de experiment.py\n- " + before + "\n+ " + after + "\n", encoding="utf-8")
+    (out / "mutacion.txt").write_text("Solo en copia temporal de report_calculations.py\n- " + before + "\n+ " + after + "\n", encoding="utf-8")
     with tempfile.TemporaryDirectory(prefix="hatedetect_lab_") as directory:
         copy = Path(directory)
         for name in sources:
@@ -43,7 +44,7 @@ def main():
             shutil.copy2(ROOT / name, target)
         env = dict(os.environ, PYTHONDONTWRITEBYTECODE="1", PYTHONIOENCODING="utf-8")
         for phase in ["01_correcto", "02_fallo_controlado", "03_restaurado"]:
-            (copy / "experiment.py").write_text(original.replace(before, after) if phase == "02_fallo_controlado" else original, encoding="utf-8")
+            (copy / "report_calculations.py").write_text(original.replace(before, after) if phase == "02_fallo_controlado" else original, encoding="utf-8")
             xml = out / (phase + ".xml")
             command = [sys.executable, "-B", "-m", "pytest", "tests/test_laboratorio_unitarias.py", "-v", "-o", "junit_family=xunit1", "--junitxml=" + str(xml)]
             result = subprocess.run(command, cwd=copy, env=env, capture_output=True, text=True, encoding="utf-8")
@@ -65,7 +66,7 @@ def main():
         writer = csv.DictWriter(handle, fieldnames=fields, extrasaction="ignore")
         writer.writeheader()
         writer.writerows(summary["ejecuciones"][-1]["casos"])
-    expected = [["PASÓ"] * 10, ["PASÓ"] * 5 + ["FALLÓ"] + ["PASÓ"] * 4, ["PASÓ"] * 10]
+    expected = [["PASÓ"] * 10, ["PASÓ"] * 9 + ["FALLÓ"], ["PASÓ"] * 10]
     for entry, statuses, code in zip(summary["ejecuciones"], expected, [0, 1, 0]):
         if entry["codigo_salida"] != code or [c["estado"] for c in entry["casos"]] != statuses:
             raise RuntimeError("Resultado distinto al previsto. Revise " + entry["fase"])

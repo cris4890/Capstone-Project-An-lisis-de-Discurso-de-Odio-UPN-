@@ -1,7 +1,10 @@
 <!doctype html><html lang="es"><meta charset="utf-8"><title>Evidencias del laboratorio HateDetect</title><style>body{font:16px system-ui;max-width:1100px;margin:40px auto;padding:20px;color:#17202a}pre{background:#f1f3f5;padding:20px;overflow:auto;font:13px Consolas,monospace}h2{margin-top:40px}</style><h1>Evidencias del laboratorio HateDetect</h1><p>Fuentes y registros reales de ejecución. Esta vista no es una captura de pantalla de un IDE.</p>
 <h2>Estructura del laboratorio</h2><pre>data_pipeline.py
-experiment.py
+context_rules.py
+model_classes.py
+report_calculations.py
 tests/test_laboratorio_unitarias.py
+tests/test_report_calculations.py
 tools/ejecutar_laboratorio.py</pre>
 <h2>data_pipeline.py</h2><pre>&quot;&quot;&quot;
 Módulo de Ingesta, Generación y Preprocesamiento de Datos de Reddit
@@ -658,185 +661,611 @@ if __name__ == &quot;__main__&quot;:
     print_corpus_summary(df_final)
     logger.info(&quot;=== Pipeline ejecutado con éxito ===&quot;)
 </pre>
-<h2>experiment.py</h2><pre>&quot;&quot;&quot;Particiones por hilo y evaluación reproducible sin selección sobre prueba.&quot;&quot;&quot;
+<h2>context_rules.py</h2><pre>&quot;&quot;&quot;Reglas v2 acotadas: no equivalen a comprensión semántica ni modelo validado.
+
+La clase histórica se conserva para que sus artefactos sigan reproduciéndose.
+&quot;&quot;&quot;
+import re
+import unicodedata
+
+from model_classes import RuleBasedClassifier
+
+
+class ContextRuleBasedClassifier(RuleBasedClassifier):
+    VERSION = &quot;2.0&quot;
+    GROUP = (
+        r&quot;(?:catolic[oa]s?|cristian[oa]s?|judi[oa]s?|musulman(?:es)?|&quot;
+        r&quot;refugiad[oa]s?|inmigrantes?|extranjer[oa]s?|gitan[oa]s?|&quot;
+        r&quot;homosexuales?|personas trans|mujeres|hombres|&quot;
+        r&quot;catholics?|christians?|jews?|muslims?|refugees?|immigrants?|&quot;
+        r&quot;foreigners?|gay people|trans people|women|men)&quot;
+    )
+    EXCLUSION = (
+        r&quot;(?:no (?:deben|deberian|pueden|merecen) (?:opinar|votar|entrar|vivir|estar aqui|tener derechos)|&quot;
+        r&quot;(?:should|must) not (?:speak|vote|live here|have rights)|&quot;
+        r&quot;(?:shouldn&#x27;t|mustn&#x27;t) (?:speak|vote|live here|have rights)|&quot;
+        r&quot;(?:do not|don&#x27;t) deserve rights)&quot;
+    )
+    DEHUMANIZATION = r&quot;(?:basura|escoria|plaga|parasitos?|subhumanos?|vermin|scum|parasites?|subhumans?)&quot;
+    VIOLENCE = r&quot;(?:matar|exterminar|expulsar|eliminar|kill|exterminate|expel|deport)&quot;
+    DENIAL = re.compile(
+        r&quot;\b(?:no es (?:cierto|verdad) que|es falso que|rechazo que|&quot;
+        r&quot;it is not true that|it is false that|i reject that|no)\s*$&quot;
+    )
+    QUOTE = re.compile(r&#x27;&quot;[^&quot;\n]+&quot;|“[^”\n]+”|«[^»\n]+»&#x27;)
+    CONDEMN = re.compile(
+        r&quot;\b(?:rechazo|condeno|denuncio|es discriminatorio|es inaceptable|&quot;
+        r&quot;i condemn|i reject|is discriminatory|is unacceptable)\b&quot;
+    )
+
+    def __init__(self):
+        # No heredar la detección de odio por mera mención identitaria.
+        self.offensive_regex = re.compile(&quot;|&quot;.join(self.OFFENSIVE_PATTERNS), re.IGNORECASE)
+        group = rf&quot;\b{self.GROUP}\b&quot;
+        gap = r&quot;(?:\s+\w+){0,6}\s+&quot;
+        self.attack_patterns = [
+            re.compile(group + gap + self.EXCLUSION),
+            re.compile(group + r&quot;\s+(?:son|es|are|is)\s+(?:(?:una?|unos?|unas|a|an)\s+)?&quot; + self.DEHUMANIZATION + r&quot;\b&quot;),
+            re.compile(r&quot;\b(?:hay que|debemos|deben|quiero|we must|we should|let&#x27;s)\s+&quot; + self.VIOLENCE + gap + group),
+            re.compile(r&quot;^\s*&quot; + self.VIOLENCE + gap + group),
+        ]
+
+    @staticmethod
+    def normalize(text):
+        return &quot;&quot;.join(c for c in unicodedata.normalize(&quot;NFKD&quot;, text.casefold())
+                       if not unicodedata.combining(c)).replace(&quot;’&quot;, &quot;&#x27;&quot;)
+
+    def predict_single(self, text):
+        if not isinstance(text, str):
+            return &quot;Neutro&quot;
+        text = self.normalize(text)
+        offensive = False
+        # Acotar cada decisión a una oración o cláusula de contraste.
+        for clause in re.split(r&quot;[.!?;\n]+|\b(?:pero|but|sin embargo|however)\b&quot;, text):
+            outside_quotes = self.QUOTE.sub(&quot;&quot;, clause)
+            condemnation = any(
+                not re.search(r&quot;\b(?:no|not|don&#x27;t|do not)\s*$&quot;, outside_quotes[:m.start()])
+                for m in self.CONDEMN.finditer(outside_quotes)
+            )
+            if condemnation:
+                clause = outside_quotes
+            for pattern in self.attack_patterns:
+                for match in pattern.finditer(clause):
+                    prefix = clause[:match.start()]
+                    prefix = re.sub(r&quot;\b(?:los|las|the)\s+$&quot;, &quot;&quot;, prefix)
+                    if not self.DENIAL.search(prefix):
+                        return &quot;Odio&quot;
+            # Evitar insultos explícitamente negados, sin borrar ataques posteriores.
+            for match in self.offensive_regex.finditer(clause):
+                prefix = clause[:match.start()]
+                if not re.search(r&quot;\b(?:no eres|no es|no son|not|isn&#x27;t|aren&#x27;t)\s+(?:(?:un|una|a|an)\s+)?$&quot;, prefix):
+                    offensive = True
+        return &quot;Ofensivo&quot; if offensive else &quot;Neutro&quot;
+</pre>
+<h2>model_classes.py</h2><pre>&quot;&quot;&quot;
+Definición de Clases y Estimadores de Modelos NLP
+=================================================
+
+Contiene las arquitecturas personalizadas para el proyecto Capstone:
+- RuleBasedClassifier: Línea base heurística de reglas y lexicón bilingüe.
+- TransformerClassifier: Envoltorio para inferencia y ajuste fino de Hugging Face.
+- TextDataset: Dataset compatible con PyTorch DataLoader.
+&quot;&quot;&quot;
+
+from __future__ import annotations
+
+import copy
+import json
+from pathlib import Path
+import logging
+import re
+from typing import Any, Dict, List, Optional, Union
+
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import GroupShuffleSplit
-from sklearn.metrics import (accuracy_score, balanced_accuracy_score, confusion_matrix,
-                             precision_recall_fscore_support, f1_score)
+import torch
+import torch.nn as nn
+from sklearn.utils.class_weight import compute_class_weight
+from torch.optim import AdamW
+from torch.utils.data import DataLoader, Dataset
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
-CLASSES = [&quot;Odio&quot;, &quot;Ofensivo&quot;, &quot;Neutro&quot;]
+logger = logging.getLogger(&quot;ModelClasses&quot;)
 
-
-def split_corpus(df, seed=42):
-    required = {&quot;id_comentario&quot;, &quot;id_hilo&quot;, &quot;texto_limpio&quot;, &quot;etiqueta&quot;, &quot;idioma&quot;, &quot;subreddit&quot;, &quot;tipo_contenido&quot;}
-    if required - set(df):
-        raise ValueError(&quot;Faltan campos para separar por hilo: &quot; + str(required - set(df)))
-    if df[list(required)].isna().any().any() or df.id_comentario.duplicated().any():
-        raise ValueError(&quot;Hay campos vacíos o identificadores repetidos.&quot;)
-    if df[list(required)].astype(str).apply(lambda c: c.str.strip()).eq(&quot;&quot;).any().any():
-        raise ValueError(&quot;Hay metadatos o textos vacíos.&quot;)
-    if not set(df.idioma).issubset({&quot;es&quot;, &quot;en&quot;}):
-        raise ValueError(&quot;El corpus debe contener solamente español e inglés revisados.&quot;)
-    if set(df.etiqueta) != set(CLASSES):
-        raise ValueError(&quot;Se requieren las tres clases anotadas.&quot;)
-    if df.texto_limpio.duplicated().any():
-        raise ValueError(&quot;Elimine textos duplicados antes de separar por hilo.&quot;)
-    if &quot;revision_idioma&quot; in df and df.revision_idioma.astype(str).str.lower().isin([&quot;true&quot;, &quot;1&quot;]).any():
-        raise ValueError(&quot;Resuelva la revisión de idioma antes de entrenar.&quot;)
-
-    def partition(frame, fraction, state):
-        splitter = GroupShuffleSplit(n_splits=200, test_size=fraction, random_state=state)
-        best = None
-        for left, right in splitter.split(frame, groups=frame.id_hilo):
-            if any(set(frame.iloc[idx].etiqueta) != set(CLASSES) for idx in (left, right)):
-                continue
-            score = abs(len(right) / len(frame) - fraction)
-            for col in [&quot;etiqueta&quot;, &quot;idioma&quot;, &quot;subreddit&quot;, &quot;tipo_contenido&quot;]:
-                target = frame[col].value_counts(normalize=True)
-                for idx in (left, right):
-                    observed = frame.iloc[idx][col].value_counts(normalize=True).reindex(target.index, fill_value=0)
-                    score += float((observed - target).abs().sum())
-            if best is None or score &lt; best[0]:
-                best = (score, left, right)
-        if best is None:
-            raise ValueError(&quot;No hay suficientes hilos y clases para formar tres particiones; amplíe el corpus.&quot;)
-        return frame.iloc[best[1]].copy(), frame.iloc[best[2]].copy()
-
-    train, temporary = partition(df, .30, seed)
-    val, test = partition(temporary, .50, seed + 1)
-    return {&quot;train&quot;: train, &quot;validation&quot;: val, &quot;test&quot;: test}
+TARGET_CLASSES = [&quot;Odio&quot;, &quot;Ofensivo&quot;, &quot;Neutro&quot;]
+LABEL_TO_ID = {label: i for i, label in enumerate(TARGET_CLASSES)}
+ID_TO_LABEL = {i: label for i, label in enumerate(TARGET_CLASSES)}
 
 
-def select_model(validation_scores):
-    if not validation_scores or not all(np.isfinite(v) for v in validation_scores.values()):
-        raise ValueError(&quot;Puntuaciones de validación inválidas.&quot;)
-    return max(validation_scores, key=validation_scores.get)
+class RuleBasedClassifier:
+    &quot;&quot;&quot;
+    Clasificador Heurístico basado en reglas léxicas y detección de patrones bilingües.
+    Permite establecer la línea base de desempeño mínima requerida.
+    &quot;&quot;&quot;
+
+    HATE_PATTERNS = [
+        # Patrones discriminatorios / odio (ES)
+        r&quot;\binmigrantes?\b&quot;, r&quot;\bextranjeros?\b&quot;, r&quot;\bdegenerados?\b&quot;, r&quot;\bfeminazis?\b&quot;,
+        r&quot;\blacra\b&quot;, r&quot;\brefugiados?\b&quot;, r&quot;\bmaric[oó]n(?:es)?\b&quot;, r&quot;\bmarr[oó]n(?:es)?\b&quot;,
+        r&quot;\bjud[ií]os?\b&quot;, r&quot;\bmendigos?\b&quot;, r&quot;\bgitanos?\b&quot;, r&quot;\bmutilan\b&quot;,
+        r&quot;\bescoria\b&quot;, r&quot;\bplaga\b&quot;, r&quot;\binvaden?\b&quot;, r&quot;\blimpien\b&quot;, r&quot;\bbasurero\b&quot;,
+        r&quot;\bperversi[oó]n\b&quot;, r&quot;\btrans\b&quot;,
+        # Discriminatory / hate patterns (EN)
+        r&quot;\billegal immigrants?\b&quot;, r&quot;\bborder\b&quot;, r&quot;\btrans ideology\b&quot;, r&quot;\bperverts?\b&quot;,
+        r&quot;\bparasites?\b&quot;, r&quot;\bethnic(?: groups)?\b&quot;, r&quot;\bmuslim(?: refugees)?\b&quot;,
+        r&quot;\bsharia\b&quot;, r&quot;\bpride parades?\b&quot;, r&quot;\binvaders?\b&quot;, r&quot;\bgroomers?\b&quot;,
+        r&quot;\bsubhumans?\b&quot;, r&quot;\bdepopulate\b&quot;, r&quot;\bvoting rights\b&quot;, r&quot;\bcancer\b&quot;,
+        r&quot;\bghetto\b&quot;,
+    ]
+
+    OFFENSIVE_PATTERNS = [
+        # Insultos directos / agresiones personales comunes (ES)
+        r&quot;\btont[oa]s?\b&quot;,
+        r&quot;\bbrut[oa]s?\b&quot;,
+        r&quot;\best[uú]pid[oa]s?\b&quot;,
+        r&quot;\bidiotas?\b&quot;,
+        r&quot;\bno sirves?\b&quot;,
+        r&quot;\bin[uú]t(?:il|iles)\b&quot;,
+        r&quot;\bbasuras?\b&quot;,
+        r&quot;\bimb[eé]cil(?:es)?\b&quot;,
+        r&quot;\bpayas[oa]s?\b&quot;,
+        r&quot;\bmierdas?\b&quot;,
+        r&quot;\bfracasad[oa]s?\b&quot;,
+        r&quot;\bverg[uü]enza ajena\b&quot;,
+        r&quot;\blamebotas\b&quot;,
+        r&quot;\busurer[oa]s?\b&quot;,
+        r&quot;\bsoplapollez\b&quot;,
+        r&quot;\bp[uú]drete\b&quot;,
+        r&quot;\bput[ao]s?\b&quot;,
+        r&quot;\bnpc\b&quot;,
+        r&quot;\bcringe\b&quot;,
+        r&quot;\bretrasad[oa]s?\b&quot;,
+        r&quot;\bsimi[oa]s?\b&quot;,
+        r&quot;\bmamadas?\b&quot;,
+        r&quot;\batropellen\b&quot;,
+        r&quot;\bbocazas\b&quot;,
+        r&quot;\bc[aá]llate\b&quot;,
+        r&quot;\basn[oa]s?\b&quot;,
+        r&quot;\bdesinstala\b&quot;,
+        r&quot;\bpendej[oa]s?\b&quot;,
+        r&quot;\bmalparid[oa]s?\b&quot;,
+        # Insultos directos / agresión personal común (EN)
+        r&quot;\bdumb\b&quot;,
+        r&quot;\bfool(?:s|ish)?\b&quot;,
+        r&quot;\buseless\b&quot;,
+        r&quot;\bjerk(?:s)?\b&quot;,
+        r&quot;\bstupid(?:s)?\b&quot;,
+        r&quot;\bidiots?\b&quot;,
+        r&quot;\bfucking\b&quot;,
+        r&quot;\bfuck\b&quot;,
+        r&quot;\bclueless\b&quot;,
+        r&quot;\bbootlicker(?:s)?\b&quot;,
+        r&quot;\bbroke\b&quot;,
+        r&quot;\blazy ass\b&quot;,
+        r&quot;\bloser(?:s)?\b&quot;,
+        r&quot;\bbrain-?dead\b&quot;,
+        r&quot;\bpiece of shit\b&quot;,
+        r&quot;\bpricks?\b&quot;,
+        r&quot;\bbitch(?:es)?\b&quot;,
+        r&quot;\bbrainrotted\b&quot;,
+        r&quot;\bdumbass(?:es)?\b&quot;,
+        r&quot;\bvirgin(?:s)?\b&quot;,
+        r&quot;\bneckbeard(?:s)?\b&quot;,
+        r&quot;\byapping\b&quot;,
+        r&quot;\bretarded\b&quot;,
+        r&quot;\bshut up\b&quot;,
+        r&quot;\bcrying\b&quot;,
+        r&quot;\basshole(?:s)?\b&quot;,
+        r&quot;\bclown(?:s)?\b&quot;,
+    ]
+
+    def __init__(self) -&gt; None:
+        self.hate_regex = re.compile(&quot;|&quot;.join(self.HATE_PATTERNS), re.IGNORECASE)
+        self.offensive_regex = re.compile(&quot;|&quot;.join(self.OFFENSIVE_PATTERNS), re.IGNORECASE)
+
+    def fit(self, X: Any = None, y: Any = None) -&gt; &quot;RuleBasedClassifier&quot;:
+        &quot;&quot;&quot;Compatibilidad con interfaz Scikit-Learn.&quot;&quot;&quot;
+        return self
+
+    def predict_single(self, text: str) -&gt; str:
+        &quot;&quot;&quot;Clasifica un comentario individual según precedencia: Odio &gt; Ofensivo &gt; Neutro.&quot;&quot;&quot;
+        if not isinstance(text, str):
+            return &quot;Neutro&quot;
+        if self.hate_regex.search(text):
+            return &quot;Odio&quot;
+        if self.offensive_regex.search(text):
+            return &quot;Ofensivo&quot;
+        return &quot;Neutro&quot;
+
+    def predict(self, texts: Union[str, pd.Series, List[str], np.ndarray]) -&gt; np.ndarray:
+        &quot;&quot;&quot;Predice un lote o un comentario individual.&quot;&quot;&quot;
+        if isinstance(texts, str):
+            texts = [texts]
+        return np.array([self.predict_single(t) for t in texts])
 
 
-def metrics_for(y_true, y_pred):
-    y_true, y_pred = np.asarray(y_true), np.asarray(y_pred)
-    precision, recall, f1, support = precision_recall_fscore_support(
-        y_true, y_pred, labels=CLASSES, zero_division=0)
-    cm = confusion_matrix(y_true, y_pred, labels=CLASSES)
-    per_class = {}
-    for i, label in enumerate(CLASSES):
-        tp, fn, fp = int(cm[i, i]), int(cm[i].sum() - cm[i, i]), int(cm[:, i].sum() - cm[i, i])
-        tn = len(y_true) - tp - fn - fp
-        per_class[label] = {&quot;precision&quot;: float(precision[i]), &quot;recall&quot;: float(recall[i]),
-                            &quot;f1&quot;: float(f1[i]), &quot;support&quot;: int(support[i]), &quot;fp&quot;: fp, &quot;fn&quot;: fn,
-                            &quot;fnr&quot;: fn / (tp + fn) if tp + fn else None,
-                            &quot;fpr&quot;: fp / (tn + fp) if tn + fp else None}
-    return {&quot;accuracy&quot;: float(accuracy_score(y_true, y_pred)),
-            &quot;balanced_accuracy&quot;: float(balanced_accuracy_score(y_true, y_pred)),
-            &quot;macro_f1&quot;: float(f1.mean()), &quot;per_class&quot;: per_class,
-            &quot;confusion_matrix&quot;: cm.tolist(), &quot;class_order&quot;: CLASSES,
-            &quot;n&quot;: len(y_true), &quot;missing_classes&quot;: [c for c in CLASSES if c not in set(y_true)]}
+class TextDataset(Dataset):
+    &quot;&quot;&quot;Dataset de PyTorch para tokenización bajo demanda.&quot;&quot;&quot;
+
+    def __init__(self, texts: List[str], labels: Optional[List[int]], tokenizer: Any, max_len: int = 128):
+        self.texts = list(texts)
+        self.labels = labels
+        self.tokenizer = tokenizer
+        self.max_len = max_len
+
+    def __len__(self) -&gt; int:
+        return len(self.texts)
+
+    def __getitem__(self, idx: int) -&gt; Dict[str, torch.Tensor]:
+        text = str(self.texts[idx])
+        encoding = self.tokenizer(
+            text,
+            truncation=True,
+            max_length=self.max_len,
+            padding=&quot;max_length&quot;,
+            return_tensors=&quot;pt&quot;,
+        )
+        item = {key: val.squeeze(0) for key, val in encoding.items()}
+        if self.labels is not None:
+            item[&quot;labels&quot;] = torch.tensor(self.labels[idx], dtype=torch.long)
+        return item
 
 
-def bootstrap_intervals(frame, predictions, samples=500, seed=42):
-    # Remuestreo de hilos completos para conservar la dependencia intrahilo.
-    rng = np.random.default_rng(seed)
-    groups = frame.id_hilo.to_numpy()
-    unique = np.unique(groups)
-    y, pred = frame.etiqueta.to_numpy(), np.asarray(predictions)
-    values = {&quot;macro_f1&quot;: [], &quot;precision_odio&quot;: [], &quot;recall_odio&quot;: [], &quot;fnr_odio&quot;: []}
-    for _ in range(samples):
-        idx = np.concatenate([np.flatnonzero(groups == g) for g in rng.choice(unique, len(unique), replace=True)])
-        values[&quot;macro_f1&quot;].append(float(f1_score(y[idx], pred[idx], labels=CLASSES, average=&quot;macro&quot;, zero_division=0)))
-        if np.any(y[idx] == &quot;Odio&quot;):
-            p, r, _, _ = precision_recall_fscore_support(y[idx], pred[idx], labels=[&quot;Odio&quot;], zero_division=0)
-            values[&quot;precision_odio&quot;].append(float(p[0]))
-            values[&quot;recall_odio&quot;].append(float(r[0]))
-            values[&quot;fnr_odio&quot;].append(float(1-r[0]))
-    return {key: {&quot;low&quot;: float(np.quantile(v, .025)), &quot;high&quot;: float(np.quantile(v, .975)), &quot;valid_samples&quot;: len(v)} if v else None for key, v in values.items()}
+class TransformerClassifier:
+    &quot;&quot;&quot;
+    Ajuste fino y predicción con un Transformer multilingüe.
+    Implementa early checkpointing según el desempeño en validación.
+    &quot;&quot;&quot;
 
+    def __init__(
+        self,
+        model_name: str = &quot;FacebookAI/xlm-roberta-base&quot;,
+        num_epochs: int = 8,
+        batch_size: int = 8,
+        lr: float = 2e-5,
+    ) -&gt; None:
+        self.model_name = model_name
+        self.num_epochs = num_epochs
+        self.batch_size = batch_size
+        self.lr = lr
+        self.device = torch.device(&quot;cuda&quot; if torch.cuda.is_available() else &quot;cpu&quot;)
 
-def subgroup_metrics(frame, predictions):
-    result = {}
-    for column in [&quot;idioma&quot;, &quot;subreddit&quot;, &quot;tipo_contenido&quot;]:
-        result[column] = {}
-        for value in frame[column].unique():
-            mask = frame[column].to_numpy() == value
-            result[column][str(value)] = metrics_for(frame.etiqueta.to_numpy()[mask], np.asarray(predictions)[mask])
-    return result
+        logger.info(&quot;Inicializando Tokenizer y Modelo Transformer (%s) en dispositivo: %s&quot;, self.model_name, self.device)
+        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+        self.model = AutoModelForSequenceClassification.from_pretrained(
+            self.model_name,
+            num_labels=len(TARGET_CLASSES),
+            id2label=ID_TO_LABEL,
+            label2id=LABEL_TO_ID,
+        )
+        self.model.to(self.device)
+        self.is_fitted = False
+
+    def fit(
+        self,
+        X_train: pd.Series,
+        y_train: pd.Series,
+        X_val: pd.Series,
+        y_val: pd.Series,
+    ) -&gt; &quot;TransformerClassifier&quot;:
+        &quot;&quot;&quot;Entrena el modelo con ajuste fino y retiene el mejor estado evaluado en validación.&quot;&quot;&quot;
+        from sklearn.metrics import f1_score
+
+        if self.num_epochs &lt; 1:
+            raise ValueError(&quot;Se requiere al menos una época de entrenamiento.&quot;)
+        y_train_ids = [LABEL_TO_ID[label] for label in y_train]
+        y_val_ids = [LABEL_TO_ID[label] for label in y_val]
+
+        train_dataset = TextDataset(X_train.tolist(), y_train_ids, self.tokenizer)
+        val_dataset = TextDataset(X_val.tolist(), y_val_ids, self.tokenizer)
+
+        train_loader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)
+        val_loader = DataLoader(val_dataset, batch_size=self.batch_size, shuffle=False)
+
+        class_weights = compute_class_weight(
+            &quot;balanced&quot;,
+            classes=np.array([0, 1, 2]),
+            y=np.array(y_train_ids),
+        )
+        class_weights_tensor = torch.tensor(class_weights, dtype=torch.float).to(self.device)
+        loss_fn = nn.CrossEntropyLoss(weight=class_weights_tensor)
+
+        optimizer = AdamW(self.model.parameters(), lr=self.lr, weight_decay=0.01)
+
+        best_val_macro_f1 = -1.0
+        best_state_dict = copy.deepcopy(self.model.state_dict())
+
+        logger.info(&quot;Iniciando ajuste fino del Transformer (%d épocas)...&quot;, self.num_epochs)
+        for epoch in range(1, self.num_epochs + 1):
+            self.model.train()
+            total_train_loss = 0.0
+
+            for batch in train_loader:
+                optimizer.zero_grad()
+                input_ids = batch[&quot;input_ids&quot;].to(self.device)
+                attention_mask = batch[&quot;attention_mask&quot;].to(self.device)
+                labels = batch[&quot;labels&quot;].to(self.device)
+
+                outputs = self.model(input_ids=input_ids, attention_mask=attention_mask)
+                loss = loss_fn(outputs.logits, labels)
+                loss.backward()
+                optimizer.step()
+                total_train_loss += loss.item()
+
+            avg_train_loss = total_train_loss / len(train_loader)
+
+            self.model.eval()
+            val_preds: List[int] = []
+            val_true: List[int] = []
+
+            with torch.no_grad():
+                for batch in val_loader:
+                    input_ids = batch[&quot;input_ids&quot;].to(self.device)
+                    attention_mask = batch[&quot;attention_mask&quot;].to(self.device)
+                    outputs = self.model(input_ids=input_ids, attention_mask=attention_mask)
+                    preds = torch.argmax(outputs.logits, dim=1).cpu().numpy()
+                    val_preds.extend(preds)
+                    val_true.extend(batch[&quot;labels&quot;].numpy())
+
+            val_macro_f1 = f1_score(val_true, val_preds, average=&quot;macro&quot;, zero_division=0)
+            logger.info(
+                &quot;Época %d/%d - Pérdida Train: %.4f | Macro-F1 (Val): %.4f&quot;,
+                epoch,
+                self.num_epochs,
+                avg_train_loss,
+                val_macro_f1,
+            )
+
+            if val_macro_f1 &gt; best_val_macro_f1:
+                best_val_macro_f1 = val_macro_f1
+                best_state_dict = copy.deepcopy(self.model.state_dict())
+
+        self.model.load_state_dict(best_state_dict)
+        self.is_fitted = True
+        self.validation_macro_f1 = float(best_val_macro_f1)
+        logger.info(&quot;Mejor Macro-F1 en Validación para Transformer: %.4f&quot;, best_val_macro_f1)
+        return self
+
+    def predict_proba(self, texts):
+        if not getattr(self, &quot;is_fitted&quot;, False):
+            raise RuntimeError(&quot;El Transformer no tiene un ajuste fino verificado.&quot;)
+        texts = [texts] if isinstance(texts, str) else list(texts)
+        if not texts:
+            return np.empty((0, len(TARGET_CLASSES)))
+        self.model.eval()
+        loader = DataLoader(TextDataset(texts, None, self.tokenizer),
+                            batch_size=self.batch_size, shuffle=False)
+        probabilities = []
+        with torch.no_grad():
+            for batch in loader:
+                inputs = {key: value.to(self.device) for key, value in batch.items()}
+                logits = self.model(**inputs).logits
+                probabilities.extend(torch.softmax(logits, dim=1).cpu().numpy())
+        return np.asarray(probabilities)
+
+    @property
+    def classes_(self):
+        return np.asarray(TARGET_CLASSES)
+
+    def predict(self, texts):
+        return self.classes_[self.predict_proba(texts).argmax(axis=1)]
+
+    def save(self, directory):
+        if not getattr(self, &quot;is_fitted&quot;, False):
+            raise RuntimeError(&quot;No se puede guardar un modelo sin entrenar.&quot;)
+        directory = Path(directory)
+        directory.mkdir(parents=True, exist_ok=True)
+        self.model.save_pretrained(directory, safe_serialization=True)
+        self.tokenizer.save_pretrained(directory)
+        metadata = {&quot;trained&quot;: True, &quot;model_name&quot;: self.model_name,
+                    &quot;classes&quot;: TARGET_CLASSES, &quot;num_epochs&quot;: self.num_epochs,
+                    &quot;batch_size&quot;: self.batch_size, &quot;lr&quot;: self.lr,
+                    &quot;validation_macro_f1&quot;: self.validation_macro_f1}
+        (directory / &quot;training_metadata.json&quot;).write_text(
+            json.dumps(metadata, ensure_ascii=False, indent=2), encoding=&quot;utf-8&quot;)
+
+    @classmethod
+    def load(cls, directory):
+        directory = Path(directory)
+        metadata_path = directory / &quot;training_metadata.json&quot;
+        if not metadata_path.is_file():
+            raise FileNotFoundError(&quot;No existe un Transformer entrenado en esta ejecución.&quot;)
+        meta = json.loads(metadata_path.read_text(encoding=&quot;utf-8&quot;))
+        if meta.get(&quot;trained&quot;) is not True or meta.get(&quot;classes&quot;) != TARGET_CLASSES:
+            raise ValueError(&quot;El checkpoint no acredita entrenamiento o clases compatibles.&quot;)
+        obj = cls.__new__(cls)
+        for name in (&quot;model_name&quot;, &quot;num_epochs&quot;, &quot;batch_size&quot;, &quot;lr&quot;, &quot;validation_macro_f1&quot;):
+            setattr(obj, name, meta[name])
+        obj.device = torch.device(&quot;cuda&quot; if torch.cuda.is_available() else &quot;cpu&quot;)
+        obj.tokenizer = AutoTokenizer.from_pretrained(directory, local_files_only=True)
+        obj.model = AutoModelForSequenceClassification.from_pretrained(directory, local_files_only=True)
+        if [obj.model.config.id2label[i] for i in range(3)] != TARGET_CLASSES:
+            raise ValueError(&quot;Orden de etiquetas incompatible con el checkpoint.&quot;)
+        obj.model.to(obj.device)
+        obj.is_fitted = True
+        return obj
 </pre>
-<h2>tests/test_laboratorio_unitarias.py</h2><pre>&quot;&quot;&quot;Diez casos unitarios identificables para el laboratorio académico.
+<h2>report_calculations.py</h2><pre>&quot;&quot;&quot;Cálculos puros reutilizables para reportes y laboratorio de HateDetect.
 
-Las propiedades conservan entradas y salidas reales en el reporte JUnit XML.
+Porcentajes en escala 0 a 100; tiempos en segundos. Sin acceso a bases de datos.
 &quot;&quot;&quot;
-import pytest
+from math import fsum, isfinite
+from numbers import Integral, Real
 
+CATEGORIES = (&quot;Odio&quot;, &quot;Ofensivo&quot;, &quot;Neutro&quot;)
+
+
+def validate_category(category):
+    if not isinstance(category, str) or category not in CATEGORIES:
+        raise ValueError(&quot;Etiqueta inválida&quot;)
+    return category
+
+
+def count_categories(labels):
+    counts = dict.fromkeys(CATEGORIES, 0)
+    for label in labels:
+        counts[validate_category(label)] += 1
+    return counts
+
+
+def _count(value):
+    if isinstance(value, bool) or not isinstance(value, Integral) or value &lt; 0:
+        raise ValueError(&quot;Se requiere un conteo entero no negativo&quot;)
+
+
+def hate_percentage(hate_count, total):
+    _count(hate_count)
+    _count(total)
+    if total == 0 or hate_count &gt; total:
+        raise ValueError(&quot;Total positivo y conteo de odio no mayor que el total&quot;)
+    return hate_count / total * 100
+
+
+def hate_precision(true_positives, false_positives):
+    _count(true_positives)
+    _count(false_positives)
+    total = true_positives + false_positives
+    return true_positives / total * 100 if total else None
+
+
+def average_latency(seconds):
+    values = list(seconds)
+    if any(isinstance(v, bool) or not isinstance(v, Real) or not isfinite(v) or v &lt; 0 for v in values):
+        raise ValueError(&quot;Los tiempos deben ser números finitos no negativos&quot;)
+    if not values:
+        return None
+    return fsum(values) / len(values)
+</pre>
+<h2>tests/test_laboratorio_unitarias.py</h2><pre>&quot;&quot;&quot;Diez pruebas acordadas de texto, números y cálculos medibles.&quot;&quot;&quot;
+import pytest
 from data_pipeline import clean_and_anonymize
-from experiment import metrics_for, select_model
+from context_rules import ContextRuleBasedClassifier
+from report_calculations import count_categories, hate_percentage, validate_category, hate_precision, average_latency
 
 
 def evidence(record_property, case, inputs, expected, observed):
-    for key, value in {&quot;caso&quot;: case, &quot;entrada&quot;: inputs, &quot;esperado&quot;: expected,
-                       &quot;observado&quot;: observed}.items():
+    for key, value in {&quot;caso&quot;: case, &quot;entrada&quot;: inputs, &quot;esperado&quot;: expected, &quot;observado&quot;: observed}.items():
         record_property(key, str(value))
 
 
 def test_p01_normaliza_espacios(record_property):
-    actual = clean_and_anonymize(&quot;  Hola\n  mundo  &quot;)
-    evidence(record_property, &quot;P01&quot;, r&quot;  Hola\n  mundo  &quot;, &quot;Hola mundo&quot;, actual)
+    text = &quot;  Hola   mundo  &quot;
+    actual = clean_and_anonymize(text)
+    evidence(record_property, &quot;PU01&quot;, repr(text), &quot;Hola mundo&quot;, actual)
     assert actual == &quot;Hola mundo&quot;
 
 
 def test_p02_oculta_correo(record_property):
-    actual = clean_and_anonymize(&quot;Escribe a persona@example.com&quot;)
-    evidence(record_property, &quot;P02&quot;, &quot;Escribe a persona@example.com&quot;, &quot;Escribe a [EMAIL]&quot;, actual)
+    text = &quot;Escribe a persona@example.com&quot;
+    actual = clean_and_anonymize(text)
+    evidence(record_property, &quot;PU02&quot;, text, &quot;Escribe a [EMAIL]&quot;, actual)
     assert actual == &quot;Escribe a [EMAIL]&quot;
 
 
-def test_p03_conserva_negacion_y_tildes(record_property):
-    text = &quot;No odio a nadie. Qué alegría.&quot;
+def test_p03_oculta_telefono(record_property):
+    text = &quot;Llámame al +51 999 123 456&quot;
     actual = clean_and_anonymize(text)
-    evidence(record_property, &quot;P03&quot;, text, text, actual)
-    assert actual == text
+    evidence(record_property, &quot;PU03&quot;, text, &quot;Llámame al [PHONE]&quot;, actual)
+    assert actual == &quot;Llámame al [PHONE]&quot;
 
 
-def test_p04_entrada_nula(record_property):
-    actual = clean_and_anonymize(None)
-    evidence(record_property, &quot;P04&quot;, &quot;None&quot;, repr(&quot;&quot;), repr(actual))
+def test_p04_entrada_numerica(record_property):
+    actual = clean_and_anonymize(12345)
+    evidence(record_property, &quot;PU04&quot;, 12345, repr(&quot;&quot;), repr(actual))
     assert actual == &quot;&quot;
 
 
-def test_p05_texto_vacio(record_property):
-    actual = clean_and_anonymize(&quot;&quot;)
-    evidence(record_property, &quot;P05&quot;, repr(&quot;&quot;), repr(&quot;&quot;), repr(actual))
-    assert actual == &quot;&quot;
+def test_p05_clasifica_insulto(record_property):
+    text = &quot;Eres un idiota.&quot;
+    actual = ContextRuleBasedClassifier().predict_single(text)
+    evidence(record_property, &quot;PU05&quot;, text, &quot;Ofensivo&quot;, actual)
+    assert actual == &quot;Ofensivo&quot;
 
 
-def test_p06_elige_mayor_validacion(record_property):
-    scores = {&quot;modelo_a&quot;: 0.80, &quot;modelo_b&quot;: 0.30}
-    actual = select_model(scores)
-    evidence(record_property, &quot;P06&quot;, scores, &quot;modelo_a&quot;, actual)
-    assert actual == &quot;modelo_a&quot;
+def test_p06_cuenta_categorias(record_property):
+    labels = [&quot;Odio&quot;, &quot;Neutro&quot;, &quot;Ofensivo&quot;, &quot;Odio&quot;]
+    expected = {&quot;Odio&quot;: 2, &quot;Ofensivo&quot;: 1, &quot;Neutro&quot;: 1}
+    actual = count_categories(labels)
+    evidence(record_property, &quot;PU06&quot;, labels, expected, actual)
+    assert actual == expected
 
 
-def test_p07_rechaza_validacion_vacia(record_property):
-    with pytest.raises(ValueError, match=&quot;Puntuaciones de validación inválidas&quot;) as exc:
-        select_model({})
-    evidence(record_property, &quot;P07&quot;, &quot;{}&quot;, &quot;ValueError&quot;, type(exc.value).__name__)
+def test_p07_porcentaje_odio(record_property):
+    actual = hate_percentage(3, 10)
+    evidence(record_property, &quot;PU07&quot;, &quot;Odio=3; total=10&quot;, &quot;30 %&quot;, f&quot;{actual:g} %&quot;)
+    assert actual == pytest.approx(30, rel=0, abs=1e-9)
 
 
-def test_p08_rechaza_nan(record_property):
-    with pytest.raises(ValueError, match=&quot;Puntuaciones de validación inválidas&quot;) as exc:
-        select_model({&quot;modelo_a&quot;: float(&quot;nan&quot;)})
-    evidence(record_property, &quot;P08&quot;, &quot;modelo_a: NaN&quot;, &quot;ValueError&quot;, type(exc.value).__name__)
+def test_p08_etiqueta_invalida(record_property):
+    with pytest.raises(ValueError, match=&quot;^Etiqueta inválida$&quot;) as exc:
+        validate_category(&quot;Violento&quot;)
+    evidence(record_property, &quot;PU08&quot;, &quot;Violento&quot;, &quot;ValueError: Etiqueta inválida&quot;, f&quot;{type(exc.value).__name__}: {exc.value}&quot;)
 
 
-def test_p09_tasa_falsos_negativos(record_property):
-    actual = metrics_for([&quot;Odio&quot;, &quot;Odio&quot;, &quot;Neutro&quot;], [&quot;Odio&quot;, &quot;Neutro&quot;, &quot;Odio&quot;])[&quot;per_class&quot;][&quot;Odio&quot;][&quot;fnr&quot;]
-    evidence(record_property, &quot;P09&quot;, &quot;Real: Odio,Odio,Neutro; predicho: Odio,Neutro,Odio&quot;, 0.5, actual)
-    assert actual == pytest.approx(0.5, abs=1e-9)
+def test_p09_precision_odio(record_property):
+    actual = hate_precision(6, 2)
+    evidence(record_property, &quot;PU09&quot;, &quot;VP=6; FP=2&quot;, &quot;75 %&quot;, f&quot;{actual:g} %&quot;)
+    assert actual == pytest.approx(75, rel=0, abs=1e-9)
 
 
-def test_p10_clase_sin_soporte(record_property):
-    actual = metrics_for([&quot;Neutro&quot;], [&quot;Neutro&quot;])[&quot;per_class&quot;][&quot;Odio&quot;][&quot;fnr&quot;]
-    evidence(record_property, &quot;P10&quot;, &quot;Real: Neutro; predicho: Neutro; FNR de Odio&quot;, &quot;None&quot;, actual)
-    assert actual is None
+def test_p10_tiempo_promedio(record_property):
+    actual = average_latency([0.20, 0.30, 0.40])
+    evidence(record_property, &quot;PU10&quot;, &quot;0.20; 0.30; 0.40 segundos&quot;, &quot;0.30 segundos&quot;, f&quot;{actual:.2f} segundos&quot;)
+    assert actual == pytest.approx(0.30, rel=0, abs=1e-9)
+</pre>
+<h2>tests/test_report_calculations.py</h2><pre>&quot;&quot;&quot;Límites adicionales, separados de los diez casos del laboratorio.&quot;&quot;&quot;
+import pytest
+from report_calculations import (
+    count_categories, validate_category, hate_percentage, hate_precision, average_latency,
+)
+
+
+def test_empty_and_undefined_results():
+    assert count_categories([]) == {&quot;Odio&quot;: 0, &quot;Ofensivo&quot;: 0, &quot;Neutro&quot;: 0}
+    assert hate_precision(0, 0) is None
+    assert average_latency([]) is None
+    assert average_latency([0, 0]) == 0
+    assert hate_percentage(0, 5) == 0
+    assert hate_percentage(5, 5) == 100
+    assert hate_precision(0, 5) == 0
+    assert hate_precision(5, 0) == 100
+
+
+@pytest.mark.parametrize(&quot;label&quot;, [None, 3, &quot;&quot;, &quot;odio&quot;, [&quot;Odio&quot;]])
+def test_invalid_category(label):
+    with pytest.raises(ValueError):
+        validate_category(label)
+    with pytest.raises(ValueError):
+        count_categories([label])
+
+
+@pytest.mark.parametrize(&quot;bad&quot;, [-1, 1.5, True, &quot;3&quot;, float(&quot;nan&quot;)])
+def test_invalid_counts(bad):
+    with pytest.raises(ValueError):
+        hate_percentage(bad, 10)
+    with pytest.raises(ValueError):
+        hate_percentage(1, bad)
+    with pytest.raises(ValueError):
+        hate_precision(bad, 2)
+    with pytest.raises(ValueError):
+        hate_precision(2, bad)
+
+
+@pytest.mark.parametrize(&quot;counts&quot;, [(0, 0), (3, 2)])
+def test_impossible_percentage(counts):
+    with pytest.raises(ValueError):
+        hate_percentage(*counts)
+
+
+@pytest.mark.parametrize(&quot;bad&quot;, [-.1, float(&quot;nan&quot;), float(&quot;inf&quot;), True, &quot;0.3&quot;])
+def test_invalid_latency(bad):
+    with pytest.raises(ValueError):
+        average_latency([.2, bad])
+
+
+def test_valid_labels():
+    for label in (&quot;Odio&quot;, &quot;Ofensivo&quot;, &quot;Neutro&quot;):
+        assert validate_category(label) == label
 </pre>
 <h2>tools/ejecutar_laboratorio.py</h2><pre>&quot;&quot;&quot;Ejecuta éxito, mutación controlada y restauración en una copia aislada.&quot;&quot;&quot;
 import argparse
@@ -865,16 +1294,17 @@ def main():
     args = parser.parse_args()
     out = args.output.resolve()
     out.mkdir(parents=True, exist_ok=True)
-    sources = [&quot;data_pipeline.py&quot;, &quot;experiment.py&quot;, &quot;tests/test_laboratorio_unitarias.py&quot;]
+    sources = [&quot;data_pipeline.py&quot;, &quot;context_rules.py&quot;, &quot;model_classes.py&quot;,
+               &quot;report_calculations.py&quot;, &quot;tests/test_laboratorio_unitarias.py&quot;]
     initial = {p: digest(ROOT / p) for p in sources}
     summary = {&quot;fecha_utc&quot;: datetime.now(timezone.utc).isoformat(), &quot;python&quot;: sys.version,
                &quot;fuentes_sha256&quot;: initial, &quot;ejecuciones&quot;: []}
-    original = (ROOT / &quot;experiment.py&quot;).read_text(encoding=&quot;utf-8&quot;)
-    before = &quot;return max(validation_scores, key=validation_scores.get)&quot;
-    after = &quot;return min(validation_scores, key=validation_scores.get)&quot;
+    original = (ROOT / &quot;report_calculations.py&quot;).read_text(encoding=&quot;utf-8&quot;)
+    before = &quot;return fsum(values) / len(values)&quot;
+    after = &quot;return fsum(values)&quot;
     if original.count(before) != 1:
         raise RuntimeError(&quot;La función cambió; revise la mutación antes de ejecutarla.&quot;)
-    (out / &quot;mutacion.txt&quot;).write_text(&quot;Solo en copia temporal de experiment.py\n- &quot; + before + &quot;\n+ &quot; + after + &quot;\n&quot;, encoding=&quot;utf-8&quot;)
+    (out / &quot;mutacion.txt&quot;).write_text(&quot;Solo en copia temporal de report_calculations.py\n- &quot; + before + &quot;\n+ &quot; + after + &quot;\n&quot;, encoding=&quot;utf-8&quot;)
     with tempfile.TemporaryDirectory(prefix=&quot;hatedetect_lab_&quot;) as directory:
         copy = Path(directory)
         for name in sources:
@@ -883,7 +1313,7 @@ def main():
             shutil.copy2(ROOT / name, target)
         env = dict(os.environ, PYTHONDONTWRITEBYTECODE=&quot;1&quot;, PYTHONIOENCODING=&quot;utf-8&quot;)
         for phase in [&quot;01_correcto&quot;, &quot;02_fallo_controlado&quot;, &quot;03_restaurado&quot;]:
-            (copy / &quot;experiment.py&quot;).write_text(original.replace(before, after) if phase == &quot;02_fallo_controlado&quot; else original, encoding=&quot;utf-8&quot;)
+            (copy / &quot;report_calculations.py&quot;).write_text(original.replace(before, after) if phase == &quot;02_fallo_controlado&quot; else original, encoding=&quot;utf-8&quot;)
             xml = out / (phase + &quot;.xml&quot;)
             command = [sys.executable, &quot;-B&quot;, &quot;-m&quot;, &quot;pytest&quot;, &quot;tests/test_laboratorio_unitarias.py&quot;, &quot;-v&quot;, &quot;-o&quot;, &quot;junit_family=xunit1&quot;, &quot;--junitxml=&quot; + str(xml)]
             result = subprocess.run(command, cwd=copy, env=env, capture_output=True, text=True, encoding=&quot;utf-8&quot;)
@@ -905,7 +1335,7 @@ def main():
         writer = csv.DictWriter(handle, fieldnames=fields, extrasaction=&quot;ignore&quot;)
         writer.writeheader()
         writer.writerows(summary[&quot;ejecuciones&quot;][-1][&quot;casos&quot;])
-    expected = [[&quot;PASÓ&quot;] * 10, [&quot;PASÓ&quot;] * 5 + [&quot;FALLÓ&quot;] + [&quot;PASÓ&quot;] * 4, [&quot;PASÓ&quot;] * 10]
+    expected = [[&quot;PASÓ&quot;] * 10, [&quot;PASÓ&quot;] * 9 + [&quot;FALLÓ&quot;], [&quot;PASÓ&quot;] * 10]
     for entry, statuses, code in zip(summary[&quot;ejecuciones&quot;], expected, [0, 1, 0]):
         if entry[&quot;codigo_salida&quot;] != code or [c[&quot;estado&quot;] for c in entry[&quot;casos&quot;]] != statuses:
             raise RuntimeError(&quot;Resultado distinto al previsto. Revise &quot; + entry[&quot;fase&quot;])
@@ -919,101 +1349,81 @@ if __name__ == &quot;__main__&quot;:
 <h2>01_correcto</h2><pre>============================= test session starts =============================
 platform win32 -- Python 3.13.14, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\user\Desktop\Capstone-Project-An-lisis-de-Discurso-de-Odio-UPN-\.venv\Scripts\python.exe
 cachedir: .pytest_cache
-rootdir: C:\Users\user\AppData\Local\Temp\hatedetect_lab_w0gzvoaf
+rootdir: C:\Users\user\AppData\Local\Temp\hatedetect_lab_b5d2ex6b
 plugins: anyio-4.15.1
 collecting ... collected 10 items
 
 tests/test_laboratorio_unitarias.py::test_p01_normaliza_espacios PASSED  [ 10%]
 tests/test_laboratorio_unitarias.py::test_p02_oculta_correo PASSED       [ 20%]
-tests/test_laboratorio_unitarias.py::test_p03_conserva_negacion_y_tildes PASSED [ 30%]
-tests/test_laboratorio_unitarias.py::test_p04_entrada_nula PASSED        [ 40%]
-tests/test_laboratorio_unitarias.py::test_p05_texto_vacio PASSED         [ 50%]
-tests/test_laboratorio_unitarias.py::test_p06_elige_mayor_validacion PASSED [ 60%]
-tests/test_laboratorio_unitarias.py::test_p07_rechaza_validacion_vacia PASSED [ 70%]
-tests/test_laboratorio_unitarias.py::test_p08_rechaza_nan PASSED         [ 80%]
-tests/test_laboratorio_unitarias.py::test_p09_tasa_falsos_negativos PASSED [ 90%]
-tests/test_laboratorio_unitarias.py::test_p10_clase_sin_soporte PASSED   [100%]
+tests/test_laboratorio_unitarias.py::test_p03_oculta_telefono PASSED     [ 30%]
+tests/test_laboratorio_unitarias.py::test_p04_entrada_numerica PASSED    [ 40%]
+tests/test_laboratorio_unitarias.py::test_p05_clasifica_insulto PASSED   [ 50%]
+tests/test_laboratorio_unitarias.py::test_p06_cuenta_categorias PASSED   [ 60%]
+tests/test_laboratorio_unitarias.py::test_p07_porcentaje_odio PASSED     [ 70%]
+tests/test_laboratorio_unitarias.py::test_p08_etiqueta_invalida PASSED   [ 80%]
+tests/test_laboratorio_unitarias.py::test_p09_precision_odio PASSED      [ 90%]
+tests/test_laboratorio_unitarias.py::test_p10_tiempo_promedio PASSED     [100%]
 
-============================== warnings summary ===============================
-tests/test_laboratorio_unitarias.py::test_p10_clase_sin_soporte
-  C:\Users\user\Desktop\Capstone-Project-An-lisis-de-Discurso-de-Odio-UPN-\.venv\Lib\site-packages\sklearn\metrics\_classification.py:614: UserWarning: A single label was found in &#x27;y_true&#x27; and &#x27;y_pred&#x27;. For the confusion matrix to have the correct shape, use the &#x27;labels&#x27; parameter to pass all known labels.
-    warnings.warn(
-
--- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
 - generated xml file: C:\Users\user\Desktop\Capstone-Project-An-lisis-de-Discurso-de-Odio-UPN-\entregables\laboratorio_unitarias\evidencias\01_correcto.xml -
-======================= 10 passed, 1 warning in 15.08s ========================
+============================= 10 passed in 46.32s =============================
 </pre>
 <h2>02_fallo_controlado</h2><pre>============================= test session starts =============================
 platform win32 -- Python 3.13.14, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\user\Desktop\Capstone-Project-An-lisis-de-Discurso-de-Odio-UPN-\.venv\Scripts\python.exe
 cachedir: .pytest_cache
-rootdir: C:\Users\user\AppData\Local\Temp\hatedetect_lab_w0gzvoaf
+rootdir: C:\Users\user\AppData\Local\Temp\hatedetect_lab_b5d2ex6b
 plugins: anyio-4.15.1
 collecting ... collected 10 items
 
 tests/test_laboratorio_unitarias.py::test_p01_normaliza_espacios PASSED  [ 10%]
 tests/test_laboratorio_unitarias.py::test_p02_oculta_correo PASSED       [ 20%]
-tests/test_laboratorio_unitarias.py::test_p03_conserva_negacion_y_tildes PASSED [ 30%]
-tests/test_laboratorio_unitarias.py::test_p04_entrada_nula PASSED        [ 40%]
-tests/test_laboratorio_unitarias.py::test_p05_texto_vacio PASSED         [ 50%]
-tests/test_laboratorio_unitarias.py::test_p06_elige_mayor_validacion FAILED [ 60%]
-tests/test_laboratorio_unitarias.py::test_p07_rechaza_validacion_vacia PASSED [ 70%]
-tests/test_laboratorio_unitarias.py::test_p08_rechaza_nan PASSED         [ 80%]
-tests/test_laboratorio_unitarias.py::test_p09_tasa_falsos_negativos PASSED [ 90%]
-tests/test_laboratorio_unitarias.py::test_p10_clase_sin_soporte PASSED   [100%]
+tests/test_laboratorio_unitarias.py::test_p03_oculta_telefono PASSED     [ 30%]
+tests/test_laboratorio_unitarias.py::test_p04_entrada_numerica PASSED    [ 40%]
+tests/test_laboratorio_unitarias.py::test_p05_clasifica_insulto PASSED   [ 50%]
+tests/test_laboratorio_unitarias.py::test_p06_cuenta_categorias PASSED   [ 60%]
+tests/test_laboratorio_unitarias.py::test_p07_porcentaje_odio PASSED     [ 70%]
+tests/test_laboratorio_unitarias.py::test_p08_etiqueta_invalida PASSED   [ 80%]
+tests/test_laboratorio_unitarias.py::test_p09_precision_odio PASSED      [ 90%]
+tests/test_laboratorio_unitarias.py::test_p10_tiempo_promedio FAILED     [100%]
 
 ================================== FAILURES ===================================
-_______________________ test_p06_elige_mayor_validacion _______________________
+__________________________ test_p10_tiempo_promedio ___________________________
 
-record_property = &lt;function record_property.&lt;locals&gt;.append_property at 0x0000021034EBA520&gt;
+record_property = &lt;function record_property.&lt;locals&gt;.append_property at 0x0000023DC4AC1B20&gt;
 
-    def test_p06_elige_mayor_validacion(record_property):
-        scores = {&quot;modelo_a&quot;: 0.80, &quot;modelo_b&quot;: 0.30}
-        actual = select_model(scores)
-        evidence(record_property, &quot;P06&quot;, scores, &quot;modelo_a&quot;, actual)
-&gt;       assert actual == &quot;modelo_a&quot;
-E       AssertionError: assert &#x27;modelo_b&#x27; == &#x27;modelo_a&#x27;
+    def test_p10_tiempo_promedio(record_property):
+        actual = average_latency([0.20, 0.30, 0.40])
+        evidence(record_property, &quot;PU10&quot;, &quot;0.20; 0.30; 0.40 segundos&quot;, &quot;0.30 segundos&quot;, f&quot;{actual:.2f} segundos&quot;)
+&gt;       assert actual == pytest.approx(0.30, rel=0, abs=1e-9)
+E       assert 0.9 == 0.3 ± 1.0e-09
 E         
-E         - modelo_a
-E         ?        ^
-E         + modelo_b
-E         ?        ^
+E         comparison failed
+E         Obtained: 0.9
+E         Expected: 0.3 ± 1.0e-09
 
-tests\test_laboratorio_unitarias.py:52: AssertionError
-============================== warnings summary ===============================
-tests/test_laboratorio_unitarias.py::test_p10_clase_sin_soporte
-  C:\Users\user\Desktop\Capstone-Project-An-lisis-de-Discurso-de-Odio-UPN-\.venv\Lib\site-packages\sklearn\metrics\_classification.py:614: UserWarning: A single label was found in &#x27;y_true&#x27; and &#x27;y_pred&#x27;. For the confusion matrix to have the correct shape, use the &#x27;labels&#x27; parameter to pass all known labels.
-    warnings.warn(
-
--- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+tests\test_laboratorio_unitarias.py:76: AssertionError
 - generated xml file: C:\Users\user\Desktop\Capstone-Project-An-lisis-de-Discurso-de-Odio-UPN-\entregables\laboratorio_unitarias\evidencias\02_fallo_controlado.xml -
 =========================== short test summary info ===========================
-FAILED tests/test_laboratorio_unitarias.py::test_p06_elige_mayor_validacion
-=================== 1 failed, 9 passed, 1 warning in 1.67s ====================
+FAILED tests/test_laboratorio_unitarias.py::test_p10_tiempo_promedio - assert...
+========================= 1 failed, 9 passed in 7.30s =========================
 </pre>
 <h2>03_restaurado</h2><pre>============================= test session starts =============================
 platform win32 -- Python 3.13.14, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\user\Desktop\Capstone-Project-An-lisis-de-Discurso-de-Odio-UPN-\.venv\Scripts\python.exe
 cachedir: .pytest_cache
-rootdir: C:\Users\user\AppData\Local\Temp\hatedetect_lab_w0gzvoaf
+rootdir: C:\Users\user\AppData\Local\Temp\hatedetect_lab_b5d2ex6b
 plugins: anyio-4.15.1
 collecting ... collected 10 items
 
 tests/test_laboratorio_unitarias.py::test_p01_normaliza_espacios PASSED  [ 10%]
 tests/test_laboratorio_unitarias.py::test_p02_oculta_correo PASSED       [ 20%]
-tests/test_laboratorio_unitarias.py::test_p03_conserva_negacion_y_tildes PASSED [ 30%]
-tests/test_laboratorio_unitarias.py::test_p04_entrada_nula PASSED        [ 40%]
-tests/test_laboratorio_unitarias.py::test_p05_texto_vacio PASSED         [ 50%]
-tests/test_laboratorio_unitarias.py::test_p06_elige_mayor_validacion PASSED [ 60%]
-tests/test_laboratorio_unitarias.py::test_p07_rechaza_validacion_vacia PASSED [ 70%]
-tests/test_laboratorio_unitarias.py::test_p08_rechaza_nan PASSED         [ 80%]
-tests/test_laboratorio_unitarias.py::test_p09_tasa_falsos_negativos PASSED [ 90%]
-tests/test_laboratorio_unitarias.py::test_p10_clase_sin_soporte PASSED   [100%]
+tests/test_laboratorio_unitarias.py::test_p03_oculta_telefono PASSED     [ 30%]
+tests/test_laboratorio_unitarias.py::test_p04_entrada_numerica PASSED    [ 40%]
+tests/test_laboratorio_unitarias.py::test_p05_clasifica_insulto PASSED   [ 50%]
+tests/test_laboratorio_unitarias.py::test_p06_cuenta_categorias PASSED   [ 60%]
+tests/test_laboratorio_unitarias.py::test_p07_porcentaje_odio PASSED     [ 70%]
+tests/test_laboratorio_unitarias.py::test_p08_etiqueta_invalida PASSED   [ 80%]
+tests/test_laboratorio_unitarias.py::test_p09_precision_odio PASSED      [ 90%]
+tests/test_laboratorio_unitarias.py::test_p10_tiempo_promedio PASSED     [100%]
 
-============================== warnings summary ===============================
-tests/test_laboratorio_unitarias.py::test_p10_clase_sin_soporte
-  C:\Users\user\Desktop\Capstone-Project-An-lisis-de-Discurso-de-Odio-UPN-\.venv\Lib\site-packages\sklearn\metrics\_classification.py:614: UserWarning: A single label was found in &#x27;y_true&#x27; and &#x27;y_pred&#x27;. For the confusion matrix to have the correct shape, use the &#x27;labels&#x27; parameter to pass all known labels.
-    warnings.warn(
-
--- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
 - generated xml file: C:\Users\user\Desktop\Capstone-Project-An-lisis-de-Discurso-de-Odio-UPN-\entregables\laboratorio_unitarias\evidencias\03_restaurado.xml -
-======================== 10 passed, 1 warning in 1.33s ========================
+============================= 10 passed in 7.73s ==============================
 </pre></html>
