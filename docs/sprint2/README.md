@@ -4,6 +4,7 @@ Preparación técnica del 19 de octubre de 2026. Rama `codex/sprint2-evidencias`
 
 ## Estado verificable
 
+- [Estado de los veinte puntos y pendientes](estado_entrega.md).
 - [Resultados y clasificación de pruebas](RESULTADOS.md).
 - [Protocolo de medición y auditoría del Excel](protocolo_kpi.md).
 - [Matriz requisito a prueba](trazabilidad.md).

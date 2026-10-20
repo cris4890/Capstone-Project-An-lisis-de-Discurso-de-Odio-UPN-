@@ -28,11 +28,15 @@ replace(516, "El avance se describe por componentes y evidencias verificables. N
 replace(521, "La ejecución del 19 de octubre de 2026 registró 105 pruebas aprobadas: 77 unitarias, 21 de integración y 7 de sistema mediante Streamlit AppTest. El inventario por caso y el JUnit XML se conservan en el paquete Sprint 2. Las pruebas técnicas no constituyen aceptación formal ni evaluación científica definitiva.")
 replace(523, "Las pruebas unitarias verifican funciones acotadas de limpieza, anonimización, reglas, cálculos y validación con entradas controladas. Los recorridos de almacenamiento, respaldo, restauración y entrenamiento con persistencia se clasifican como integración. La clasificación se registra por caso mediante pytest y no se deduce únicamente del nombre del archivo.")
 replace(529, "Los criterios de aceptación cubren clasificación, guardado voluntario, consulta de Historial, Reportes y visibilidad de errores y límites. Se dispone de verificación técnica y capturas reales. La Review de Sprint 2 está preparada: fecha de sesión, participantes efectivos, criterios aceptados y observaciones requieren registro humano. No se afirma que haya sido celebrada ni aprobada.")
+replace(532, "GitHub Actions ejecutó satisfactoriamente las 105 pruebas de la versión 2812f23 de Sprint 2. Esta evidencia automatizada de calidad no constituye un despliegue productivo ni aceptación formal.")
 replace(539, "La ficha KPI-PILOTO-001 del 04/10/2026 contiene 30 textos sintéticos y una clave de trabajo. El registro manual suma 203,84 segundos, 28 aciertos y 2 errores. La repetición de reglas v2 del 19/10/2026 mantiene 18 aciertos y 12 errores. Se midieron además treinta ventanas desde el clic hasta el resultado renderizado en el navegador: suma de 8,407 segundos y media de 0,280 segundos. La Tabla 24 distingue los alcances.")
 replace(541, "Nota. Los tiempos E2E se toman desde el clic hasta un marcador nuevo de resultado y dos frames como aproximación al renderizado. Excluyen ingreso, revisión humana, guardado e intervalos entre casos. No son directamente equivalentes al trabajo manual. La capacidad y cobertura de ventanas se muestran de forma descriptiva; no acreditan ahorro laboral ni superioridad operativa causal.")
 replace(545, "El piloto distingue velocidad de respuesta y calidad predictiva. El 60 % de exactitud de HateDetect es inferior al 93,33 % manual. La repetición E2E mejora el alcance del cronometraje frente a medir solo inferencia, pero no incluye todo el trabajo humano. No se calculan ahorro salarial ni retorno de inversión sin costos y ventanas comparables.")
 replace(553, "Se dispone de una ficha piloto y de una repetición E2E para explorar los cinco KPI. Estas observaciones permiten detectar defectos del instrumento y del producto, pero no validan definitivamente el procedimiento. Faltan límites temporales equivalentes, repetición con evaluadores y muestra independiente.")
 replace(556, "X. REFERENCIAS")
+for p in original:
+    if "Los tiempos de HateDetect corresponden al tiempo interno" in p.text:
+        p.text = original[541].text
 for idx in [8]:
     original[idx].style = d.styles["Title"]
 
@@ -85,7 +89,8 @@ for title, start, end in [
     h.paragraph_format.page_break_before = True
     body = content.split(start, 1)[1].split(end, 1)[0].split("\n", 1)[1]
     for para in body.strip().split("\n\n"):
-        add(para)
+        p = add(para)
+        p.paragraph_format.line_spacing = 1.5
 anchor.paragraph_format.page_break_before = True
 
 d.add_heading("Anexo E. Evidencias de Sprint 2", level=2)
@@ -125,14 +130,25 @@ def field_before(instruction):
     return p
 field_before(' TOC \\o "1-3" \\h \\z \\u ')
 p = index_anchor.insert_paragraph_before("ÍNDICE DE TABLAS"); p.style = "Heading 1"; p.paragraph_format.page_break_before = True
-field_before(' TOC \\h \\z \\t "TABLA,1" ')
+field_before(' TOC \\h \\z \\t "TABLA;1" ')
 p = index_anchor.insert_paragraph_before("ÍNDICE DE FIGURAS"); p.style = "Heading 1"; p.paragraph_format.page_break_before = True
-field_before(' TOC \\h \\z \\t "FIGURA,1" ')
+field_before(' TOC \\h \\z \\t "FIGURA;1" ')
 index_anchor.paragraph_format.page_break_before = True
 for p in d.paragraphs:
     if p.style.name in {"TABLA", "FIGURA"}:
+        if not re.match(r"^(Tabla|Figura) \d+", p.text):
+            p.style = d.styles["Normal"]
+            continue
         p.paragraph_format.keep_with_next = True
 for table in d.tables:
+    for row in table.rows:
+        for cell in row.cells:
+            for p in cell.paragraphs:
+                if p.style.name in {"TABLA", "FIGURA"}:
+                    p.style = d.styles["Normal"]
+    for cell in table.rows[0].cells:
+        for p in cell.paragraphs:
+            p.paragraph_format.keep_with_next = True
     for row in table.rows:
         no_split = OxmlElement("w:cantSplit")
         row._tr.get_or_add_trPr().append(no_split)
