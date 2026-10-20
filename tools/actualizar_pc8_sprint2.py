@@ -37,6 +37,8 @@ replace(556, "X. REFERENCIAS")
 for p in original:
     if "Los tiempos de HateDetect corresponden al tiempo interno" in p.text:
         p.text = original[541].text
+    elif "El evaluador manual clasificó los textos sin visualizar" in p.text:
+        p.text = "La ficha piloto contiene treinta textos sintéticos en español e inglés, clasificación manual y una clave de trabajo. No se confirmó cegamiento del evaluador ni independencia de la clave. Se registraron tiempos y categorías; Macro-F1, precisión y exhaustividad se distinguen de los KPI operativos."
 for idx in [8]:
     original[idx].style = d.styles["Title"]
 
