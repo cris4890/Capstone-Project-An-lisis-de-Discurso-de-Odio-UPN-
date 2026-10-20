@@ -1,0 +1,15 @@
+{
+  "fecha_utc": "2026-10-19T23:43:05.720507+00:00",
+  "base_commit": "92c470d4fcca67bd8ef9174699411755930c8d5f",
+  "nota": "El commit base puede preceder al commit de evidencias; estos hashes identifican las fuentes probadas.",
+  "modelo": "ContextRuleBasedClassifier 2.0",
+  "sha256": {
+    "app.py": "870cd5d38763142cfc8b871bb6e226f698f92257b22bc271c29a2d0f252966be",
+    "context_rules.py": "2e50afc12d1c3f0aa7c7bfeb15d8963bb10e9d5d4b7af061aa9f3edcf7fbaf56",
+    "data_pipeline.py": "6f52903da42e373a5ed0292363da1510c547b5a087e23ca3a2f9c5b63878fea3",
+    "e2e_probe.py": "dc311dc51e0fa1bf1c00e16d1ed8c4b3ea04693707955fbf4d355ef528524785",
+    "e2e_probe.html": "b78bffdd2d4e88fcb5e89dbfec8b3b55ced49e49d746eaaa1fa608f80414c74b",
+    "tests/conftest.py": "363e1c5a2356396c4027211666434ac763788e40146fed6b4b4bb12fc29d8089"
+  },
+  "casos_sha256": "a8f5c848fa83784fe36eb609bd876b25d96423ad444ab92ee8d899a262797171"
+}

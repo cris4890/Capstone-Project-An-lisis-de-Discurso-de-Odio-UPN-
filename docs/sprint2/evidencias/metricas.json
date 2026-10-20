@@ -1,0 +1,128 @@
+{
+  "actual": {
+    "accuracy": 0.6,
+    "balanced_accuracy": 0.6,
+    "macro_f1": 0.5046296296296297,
+    "per_class": {
+      "Odio": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "support": 10,
+        "fp": 0,
+        "fn": 10,
+        "fnr": 1.0,
+        "fpr": 0.0
+      },
+      "Ofensivo": {
+        "precision": 1.0,
+        "recall": 0.8,
+        "f1": 0.8888888888888888,
+        "support": 10,
+        "fp": 0,
+        "fn": 2,
+        "fnr": 0.2,
+        "fpr": 0.0
+      },
+      "Neutro": {
+        "precision": 0.45454545454545453,
+        "recall": 1.0,
+        "f1": 0.625,
+        "support": 10,
+        "fp": 12,
+        "fn": 0,
+        "fnr": 0.0,
+        "fpr": 0.6
+      }
+    },
+    "confusion_matrix": [
+      [
+        0,
+        0,
+        10
+      ],
+      [
+        0,
+        8,
+        2
+      ],
+      [
+        0,
+        0,
+        10
+      ]
+    ],
+    "class_order": [
+      "Odio",
+      "Ofensivo",
+      "Neutro"
+    ],
+    "n": 30,
+    "missing_classes": []
+  },
+  "historico": {
+    "accuracy": 0.6,
+    "balanced_accuracy": 0.6,
+    "macro_f1": 0.5046296296296297,
+    "per_class": {
+      "Odio": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "support": 10,
+        "fp": 0,
+        "fn": 10,
+        "fnr": 1.0,
+        "fpr": 0.0
+      },
+      "Ofensivo": {
+        "precision": 1.0,
+        "recall": 0.8,
+        "f1": 0.8888888888888888,
+        "support": 10,
+        "fp": 0,
+        "fn": 2,
+        "fnr": 0.2,
+        "fpr": 0.0
+      },
+      "Neutro": {
+        "precision": 0.45454545454545453,
+        "recall": 1.0,
+        "f1": 0.625,
+        "support": 10,
+        "fp": 12,
+        "fn": 0,
+        "fnr": 0.0,
+        "fpr": 0.6
+      }
+    },
+    "confusion_matrix": [
+      [
+        0,
+        0,
+        10
+      ],
+      [
+        0,
+        8,
+        2
+      ],
+      [
+        0,
+        0,
+        10
+      ]
+    ],
+    "class_order": [
+      "Odio",
+      "Ofensivo",
+      "Neutro"
+    ],
+    "n": 30,
+    "missing_classes": []
+  },
+  "referencia": "Clave de la ficha del usuario; textos sintéticos, independencia no acreditada",
+  "comparacion_manual": "Datos manuales aportados; límites temporales no equivalentes, comparación descriptiva",
+  "e2e_n": 30,
+  "n": 30
+}

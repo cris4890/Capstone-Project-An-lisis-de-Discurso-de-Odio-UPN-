@@ -1,0 +1,272 @@
+[
+  {
+    "sequence": 1,
+    "started_utc": "2026-10-19T23:40:44.592Z",
+    "seconds": 0.4425,
+    "request_id": "b2b5c12b-51d0-4a77-86ba-788495acb074",
+    "prediction": "Neutro",
+    "method": "capture_click_to_result_marker_two_animation_frames",
+    "id": "T001"
+  },
+  {
+    "sequence": 2,
+    "started_utc": "2026-10-19T23:41:35.916Z",
+    "seconds": 0.18269999999925493,
+    "request_id": "d540fda5-9dff-469b-b3a1-be370ad5db2e",
+    "prediction": "Ofensivo",
+    "method": "capture_click_to_result_marker_two_animation_frames",
+    "id": "T002"
+  },
+  {
+    "sequence": 3,
+    "started_utc": "2026-10-19T23:41:36.219Z",
+    "seconds": 0.2903999999985099,
+    "request_id": "d05c1248-4b18-4963-9bd3-bad742187c24",
+    "prediction": "Neutro",
+    "method": "capture_click_to_result_marker_two_animation_frames",
+    "id": "T003"
+  },
+  {
+    "sequence": 4,
+    "started_utc": "2026-10-19T23:41:36.636Z",
+    "seconds": 0.28830000000074507,
+    "request_id": "c6aa0007-9c53-4786-899c-17eb4febb574",
+    "prediction": "Neutro",
+    "method": "capture_click_to_result_marker_two_animation_frames",
+    "id": "T004"
+  },
+  {
+    "sequence": 5,
+    "started_utc": "2026-10-19T23:41:37.053Z",
+    "seconds": 0.3011000000014901,
+    "request_id": "f2089c70-2418-4e52-addc-7ffe15817fe6",
+    "prediction": "Ofensivo",
+    "method": "capture_click_to_result_marker_two_animation_frames",
+    "id": "T005"
+  },
+  {
+    "sequence": 6,
+    "started_utc": "2026-10-19T23:41:37.465Z",
+    "seconds": 0.30540000000223516,
+    "request_id": "e552364d-ef63-411a-972e-413ee53bf7f9",
+    "prediction": "Neutro",
+    "method": "capture_click_to_result_marker_two_animation_frames",
+    "id": "T006"
+  },
+  {
+    "sequence": 7,
+    "started_utc": "2026-10-19T23:41:37.876Z",
+    "seconds": 0.2865,
+    "request_id": "d6333cb4-eca8-4d1a-b954-6e16a11d8fa8",
+    "prediction": "Neutro",
+    "method": "capture_click_to_result_marker_two_animation_frames",
+    "id": "T007"
+  },
+  {
+    "sequence": 8,
+    "started_utc": "2026-10-19T23:41:38.294Z",
+    "seconds": 0.3213999999985099,
+    "request_id": "35a79a27-99e8-456a-871d-f9c85c4d7fad",
+    "prediction": "Ofensivo",
+    "method": "capture_click_to_result_marker_two_animation_frames",
+    "id": "T008"
+  },
+  {
+    "sequence": 9,
+    "started_utc": "2026-10-19T23:41:38.694Z",
+    "seconds": 0.2854000000022352,
+    "request_id": "c81dd849-4f86-4270-845b-38ccb7e87294",
+    "prediction": "Neutro",
+    "method": "capture_click_to_result_marker_two_animation_frames",
+    "id": "T009"
+  },
+  {
+    "sequence": 10,
+    "started_utc": "2026-10-19T23:41:39.109Z",
+    "seconds": 0.16969999999925495,
+    "request_id": "937144cb-4d38-4ec1-965f-b7c7768b0a1c",
+    "prediction": "Neutro",
+    "method": "capture_click_to_result_marker_two_animation_frames",
+    "id": "T010"
+  },
+  {
+    "sequence": 11,
+    "started_utc": "2026-10-19T23:41:59.994Z",
+    "seconds": 0.31380000000074504,
+    "request_id": "1e19f4b0-e537-481a-87f5-f85ab2ac9360",
+    "prediction": "Ofensivo",
+    "method": "capture_click_to_result_marker_two_animation_frames",
+    "id": "T011"
+  },
+  {
+    "sequence": 12,
+    "started_utc": "2026-10-19T23:42:00.411Z",
+    "seconds": 0.2823999999985099,
+    "request_id": "97a062ac-6a74-4ab0-b25e-94f87cdb36b9",
+    "prediction": "Neutro",
+    "method": "capture_click_to_result_marker_two_animation_frames",
+    "id": "T012"
+  },
+  {
+    "sequence": 13,
+    "started_utc": "2026-10-19T23:42:00.845Z",
+    "seconds": 0.2880999999977648,
+    "request_id": "c94fda9a-5317-497b-be9f-6df039d9a95d",
+    "prediction": "Neutro",
+    "method": "capture_click_to_result_marker_two_animation_frames",
+    "id": "T013"
+  },
+  {
+    "sequence": 14,
+    "started_utc": "2026-10-19T23:42:01.368Z",
+    "seconds": 0.297,
+    "request_id": "2bc1dec3-e5bd-46de-9126-f962d86e9881",
+    "prediction": "Neutro",
+    "method": "capture_click_to_result_marker_two_animation_frames",
+    "id": "T014"
+  },
+  {
+    "sequence": 15,
+    "started_utc": "2026-10-19T23:42:01.778Z",
+    "seconds": 0.3040999999977648,
+    "request_id": "1749f02a-1409-490a-94a3-255c46a17554",
+    "prediction": "Neutro",
+    "method": "capture_click_to_result_marker_two_animation_frames",
+    "id": "T015"
+  },
+  {
+    "sequence": 16,
+    "started_utc": "2026-10-19T23:42:02.185Z",
+    "seconds": 0.26830000000074505,
+    "request_id": "a51dad18-6395-4c69-9076-789c35b32be5",
+    "prediction": "Neutro",
+    "method": "capture_click_to_result_marker_two_animation_frames",
+    "id": "T016"
+  },
+  {
+    "sequence": 17,
+    "started_utc": "2026-10-19T23:42:02.598Z",
+    "seconds": 0.29170000000298024,
+    "request_id": "7e54c225-8d93-493a-9125-156286642f1d",
+    "prediction": "Ofensivo",
+    "method": "capture_click_to_result_marker_two_animation_frames",
+    "id": "T017"
+  },
+  {
+    "sequence": 18,
+    "started_utc": "2026-10-19T23:42:03.005Z",
+    "seconds": 0.27819999999925493,
+    "request_id": "b1aab103-0ebe-4789-8bc3-2c46f18a6161",
+    "prediction": "Neutro",
+    "method": "capture_click_to_result_marker_two_animation_frames",
+    "id": "T018"
+  },
+  {
+    "sequence": 19,
+    "started_utc": "2026-10-19T23:42:03.437Z",
+    "seconds": 0.164,
+    "request_id": "81b0d6c5-ebe0-46e3-a1d6-ec8225eb514a",
+    "prediction": "Neutro",
+    "method": "capture_click_to_result_marker_two_animation_frames",
+    "id": "T019"
+  },
+  {
+    "sequence": 20,
+    "started_utc": "2026-10-19T23:42:03.723Z",
+    "seconds": 0.28890000000223515,
+    "request_id": "376ad764-cd64-4282-9d9a-30b442919fe8",
+    "prediction": "Ofensivo",
+    "method": "capture_click_to_result_marker_two_animation_frames",
+    "id": "T020"
+  },
+  {
+    "sequence": 21,
+    "started_utc": "2026-10-19T23:42:04.143Z",
+    "seconds": 0.29519999999925495,
+    "request_id": "2944c9c1-90d2-43a8-bfbf-320672d8f3e9",
+    "prediction": "Neutro",
+    "method": "capture_click_to_result_marker_two_animation_frames",
+    "id": "T021"
+  },
+  {
+    "sequence": 22,
+    "started_utc": "2026-10-19T23:42:04.663Z",
+    "seconds": 0.28270000000298023,
+    "request_id": "a0c29527-fc9a-4852-8423-4e600c0e179c",
+    "prediction": "Neutro",
+    "method": "capture_click_to_result_marker_two_animation_frames",
+    "id": "T022"
+  },
+  {
+    "sequence": 23,
+    "started_utc": "2026-10-19T23:42:05.077Z",
+    "seconds": 0.30819999999925496,
+    "request_id": "19c7dd70-b16a-4c5a-ac9d-f3c5631a783a",
+    "prediction": "Ofensivo",
+    "method": "capture_click_to_result_marker_two_animation_frames",
+    "id": "T023"
+  },
+  {
+    "sequence": 24,
+    "started_utc": "2026-10-19T23:42:05.476Z",
+    "seconds": 0.2739000000022352,
+    "request_id": "4a7b84f5-80e8-4aee-8deb-e16e58f7aa45",
+    "prediction": "Neutro",
+    "method": "capture_click_to_result_marker_two_animation_frames",
+    "id": "T024"
+  },
+  {
+    "sequence": 25,
+    "started_utc": "2026-10-19T23:42:05.879Z",
+    "seconds": 0.1561000000014901,
+    "request_id": "d1b6307d-17be-48b9-8750-b6dc88192e81",
+    "prediction": "Neutro",
+    "method": "capture_click_to_result_marker_two_animation_frames",
+    "id": "T025"
+  },
+  {
+    "sequence": 26,
+    "started_utc": "2026-10-19T23:42:06.176Z",
+    "seconds": 0.289,
+    "request_id": "4875fe59-008c-4f55-92df-ee9bcbfbdc56",
+    "prediction": "Ofensivo",
+    "method": "capture_click_to_result_marker_two_animation_frames",
+    "id": "T026"
+  },
+  {
+    "sequence": 27,
+    "started_utc": "2026-10-19T23:42:06.599Z",
+    "seconds": 0.2846000000014901,
+    "request_id": "81da3b2e-5fc0-4545-8863-5dfcc2d3bdf2",
+    "prediction": "Neutro",
+    "method": "capture_click_to_result_marker_two_animation_frames",
+    "id": "T027"
+  },
+  {
+    "sequence": 28,
+    "started_utc": "2026-10-19T23:42:07.013Z",
+    "seconds": 0.27929999999701977,
+    "request_id": "705a2e76-e484-4ff4-909d-709e4df8a10c",
+    "prediction": "Neutro",
+    "method": "capture_click_to_result_marker_two_animation_frames",
+    "id": "T028"
+  },
+  {
+    "sequence": 29,
+    "started_utc": "2026-10-19T23:42:07.418Z",
+    "seconds": 0.3051000000014901,
+    "request_id": "298b024a-ff10-45a7-93c9-0c7384780022",
+    "prediction": "Neutro",
+    "method": "capture_click_to_result_marker_two_animation_frames",
+    "id": "T029"
+  },
+  {
+    "sequence": 30,
+    "started_utc": "2026-10-19T23:42:07.827Z",
+    "seconds": 0.28269999999925494,
+    "request_id": "d7d52c4f-6281-4530-b6f0-72ec01fc28aa",
+    "prediction": "Neutro",
+    "method": "capture_click_to_result_marker_two_animation_frames",
+    "id": "T030"
+  }
+]

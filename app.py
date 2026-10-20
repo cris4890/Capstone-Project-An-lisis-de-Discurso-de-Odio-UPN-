@@ -3,6 +3,9 @@ import json
 import sqlite3
 from pathlib import Path
 import time
+import uuid
+from html import escape
+from e2e_probe import enabled as e2e_enabled, render_probe
 
 import pandas as pd
 import plotly.express as px
@@ -126,6 +129,7 @@ elif menu != "Historial":
 if menu == "Clasificación":
     st.title("Clasificación")
     st.write("Analiza un comentario y revisa su clasificación en español o inglés.")
+    render_probe()
     if report:
         options = ["selected"] + list(report["models"])
         key = st.selectbox("Modelo", options, format_func=lambda k: "Seleccionado por validación" if k == "selected" else report["models"][k]["name"])
@@ -157,7 +161,8 @@ if menu == "Clasificación":
             st.subheader("Resultado del análisis")
             left, right = st.columns(2)
             left.metric("Predicción", predicted)
-            right.metric("Tiempo de respuesta", f"{elapsed:.2f} ms")
+            right.metric("Tiempo de inferencia", f"{elapsed:.2f} ms")
+            st.caption("Este tiempo mide solo el modelo; excluye envío, limpieza y renderizado de la interfaz.")
             st.caption("Clasificación orientativa. Revisa el contexto antes de tomar una decisión.")
             confidence = None
             if hasattr(model, "predict_proba"):
@@ -169,6 +174,8 @@ if menu == "Clasificación":
                 st.caption("Este modelo no ofrece un porcentaje de confianza.")
             st.write("Texto procesado")
             st.code(cleaned, language=None)
+            if e2e_enabled():
+                st.html(f'<div id="hatedetect-result" data-request="{uuid.uuid4()}" data-prediction="{escape(str(predicted), quote=True)}">Resultado disponible</div>')
             if save_history:
                 try:
                     HistoryStore(history_path()).add(cleaned, str(predicted), name,

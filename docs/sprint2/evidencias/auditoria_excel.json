@@ -1,0 +1,81 @@
+{
+  "archivo": "Ficha_Medicion_KPI_Manual_vs_HateDetect(4).xlsx",
+  "sha256": "5dae1e23ebbe0d34f3c694db9b74e807a80438e1208371c60f223341f8cada30",
+  "fecha_ficha": "2026-10-04",
+  "tiempo_fijo_minutos": 1,
+  "conflictos_D_J": [
+    {
+      "id": "T003",
+      "D": "Odio",
+      "J": "Neutro",
+      "fila": 9
+    },
+    {
+      "id": "T006",
+      "D": "Odio",
+      "J": "Neutro",
+      "fila": 12
+    },
+    {
+      "id": "T009",
+      "D": "Odio",
+      "J": "Neutro",
+      "fila": 15
+    },
+    {
+      "id": "T012",
+      "D": "Odio",
+      "J": "Neutro",
+      "fila": 18
+    },
+    {
+      "id": "T014",
+      "D": "Ofensivo",
+      "J": "Neutro",
+      "fila": 20
+    },
+    {
+      "id": "T015",
+      "D": "Odio",
+      "J": "Neutro",
+      "fila": 21
+    },
+    {
+      "id": "T018",
+      "D": "Odio",
+      "J": "Neutro",
+      "fila": 24
+    },
+    {
+      "id": "T021",
+      "D": "Odio",
+      "J": "Neutro",
+      "fila": 27
+    },
+    {
+      "id": "T024",
+      "D": "Odio",
+      "J": "Neutro",
+      "fila": 30
+    },
+    {
+      "id": "T027",
+      "D": "Odio",
+      "J": "Neutro",
+      "fila": 33
+    },
+    {
+      "id": "T029",
+      "D": "Ofensivo",
+      "J": "Neutro",
+      "fila": 35
+    },
+    {
+      "id": "T030",
+      "D": "Odio",
+      "J": "Neutro",
+      "fila": 36
+    }
+  ],
+  "nota": "Resumen original enlaza D, no J. J coincide con el registro histórico. Se conserva D para auditoría; no se usa como predicción observada."
+}

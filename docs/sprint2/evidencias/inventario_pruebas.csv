@@ -1,0 +1,106 @@
+﻿prueba,tipo,resultado,segundos
+tests.test_annotation_report::test_closure_rejects_modified_evidence,integracion,aprobada,0.022
+tests.test_context_rules::test_context_regressions[las personas de religion catolica no deben opinar-Odio],unitaria,aprobada,0.004
+tests.test_context_rules::test_context_regressions[Las personas de religi\xf3n cat\xf3lica no deben opinar.-Odio],unitaria,aprobada,0.001
+tests.test_context_rules::test_context_regressions[Los refugiados merecen respeto-Neutro],unitaria,aprobada,0.001
+tests.test_context_rules::test_context_regressions[Los jud\xedos celebran una fiesta-Neutro],unitaria,aprobada,0.001
+tests.test_context_rules::test_context_regressions[Muslim refugees deserve respect-Neutro],unitaria,aprobada,0.001
+tests.test_context_rules::test_context_regressions[Las personas cat\xf3licas pueden opinar-Neutro],unitaria,aprobada,0.001
+tests.test_context_rules::test_context_regressions[Los inmigrantes son una plaga-Odio],unitaria,aprobada,0.001
+tests.test_context_rules::test_context_regressions[Immigrants are parasites-Odio],unitaria,aprobada,0.001
+tests.test_context_rules::test_context_regressions[Catholics should not vote-Odio],unitaria,aprobada,0.001
+tests.test_context_rules::test_context_regressions[Catholics shouldn't vote-Odio],unitaria,aprobada,0.001
+tests.test_context_rules::test_context_regressions[Hay que expulsar a los musulmanes-Odio],unitaria,aprobada,0.001
+tests.test_context_rules::test_context_regressions[We must kill all immigrants-Odio],unitaria,aprobada,0.001
+tests.test_context_rules::test_context_regressions[No hay que expulsar a los musulmanes-Neutro],unitaria,aprobada,0.001
+tests.test_context_rules::test_context_regressions[No es cierto que los inmigrantes son una plaga-Neutro],unitaria,aprobada,0.001
+tests.test_context_rules::test_context_regressions[It is not true that immigrants are parasites-Neutro],unitaria,aprobada,0.001
+"tests.test_context_rules::test_context_regressions[Condeno la frase ""los inmigrantes son una plaga""-Neutro]",unitaria,aprobada,0.001
+"tests.test_context_rules::test_context_regressions[""Immigrants are parasites"" is discriminatory-Neutro]",unitaria,aprobada,0.001
+"tests.test_context_rules::test_context_regressions[No condeno ""los inmigrantes son una plaga""-Odio]",unitaria,aprobada,0.001
+tests.test_context_rules::test_context_regressions[Condeno el racismo. Los cat\xf3licos no deben votar-Odio],unitaria,aprobada,0.001
+"tests.test_context_rules::test_context_regressions[No es cierto que los inmigrantes son una plaga, pero los cat\xf3licos no deben votar-Odio]",unitaria,aprobada,0.001
+"tests.test_context_rules::test_context_regressions[Condeno ""los inmigrantes son una plaga"", pero los cat\xf3licos no deben votar-Odio]",unitaria,aprobada,0.001
+tests.test_context_rules::test_context_regressions[Los refugiados merecen respeto. Los cat\xf3licos no deben votar-Odio],unitaria,aprobada,0.001
+tests.test_context_rules::test_context_regressions[Los refugiados merecen respeto. Eres un idiota-Ofensivo],unitaria,aprobada,0.001
+tests.test_context_rules::test_context_regressions[No eres un idiota-Neutro],unitaria,aprobada,0.001
+"tests.test_context_rules::test_context_regressions[No eres un idiota, pero eres un imb\xe9cil-Ofensivo]",unitaria,aprobada,0.001
+tests.test_context_rules::test_context_regressions[Eres un idiota-Ofensivo],unitaria,aprobada,0.001
+tests.test_context_rules::test_context_regressions[You are an idiot-Ofensivo],unitaria,aprobada,0.001
+tests.test_context_rules::test_context_regressions[Gracias por compartir la informaci\xf3n-Neutro],unitaria,aprobada,0.001
+tests.test_context_rules::test_context_regressions[Thank you for your help-Neutro],unitaria,aprobada,0.001
+tests.test_context_rules::test_legacy_and_v2_artifacts_remain_distinct,integracion,aprobada,0.033
+tests.test_doccano_agreement::test_known_kappa_and_original_ambiguity,unitaria,aprobada,0.001
+tests.test_doccano_agreement::test_single_class_has_undefined_kappa,unitaria,aprobada,0.001
+tests.test_doccano_agreement::test_mismatched_units_rejected,unitaria,aprobada,0.001
+tests.test_doccano_import::test_retains_assistance_without_training_or_premature_kappa,unitaria,aprobada,0.001
+tests.test_doccano_import::test_rejects_mismatched_evidence[duplicate-duplicado],unitaria,aprobada,0.001
+tests.test_doccano_import::test_rejects_mismatched_evidence[hash-hash],unitaria,aprobada,0.001
+tests.test_doccano_import::test_rejects_mismatched_evidence[text-texto],unitaria,aprobada,0.002
+tests.test_doccano_import::test_rejects_mismatched_evidence[project-Proyecto],unitaria,aprobada,0.002
+tests.test_doccano_import::test_missing_b_and_unresolved_target_excluded,unitaria,aprobada,0.002
+tests.test_doccano_import::test_ambiguous_comments_require_review_not_latest_wins,unitaria,aprobada,0.002
+tests.test_doccano_import::test_unconfirmed_and_blank_reason_not_accepted,unitaria,aprobada,0.002
+tests.test_doccano_import::test_assistance_in_target_is_preserved,unitaria,aprobada,0.001
+tests.test_e2e_probe::test_probe_disabled_by_default,unitaria,aprobada,0.002
+tests.test_e2e_probe::test_probe_requires_explicit_flag,unitaria,aprobada,0.001
+tests.test_functional_journey::test_save_search_and_filter_history,sistema,aprobada,0.713
+tests.test_functional_journey::test_corpus_filters_and_literal_search,sistema,aprobada,1.212
+tests.test_laboratorio_unitarias::test_p01_normaliza_espacios,unitaria,aprobada,0.001
+tests.test_laboratorio_unitarias::test_p02_oculta_correo,unitaria,aprobada,0.001
+tests.test_laboratorio_unitarias::test_p03_oculta_telefono,unitaria,aprobada,0.001
+tests.test_laboratorio_unitarias::test_p04_entrada_numerica,unitaria,aprobada,0.001
+tests.test_laboratorio_unitarias::test_p05_clasifica_insulto,unitaria,aprobada,0.001
+tests.test_laboratorio_unitarias::test_p06_cuenta_categorias,unitaria,aprobada,0.001
+tests.test_laboratorio_unitarias::test_p07_porcentaje_odio,unitaria,aprobada,0.002
+tests.test_laboratorio_unitarias::test_p08_etiqueta_invalida,unitaria,aprobada,0.002
+tests.test_laboratorio_unitarias::test_p09_precision_odio,unitaria,aprobada,0.001
+tests.test_laboratorio_unitarias::test_p10_tiempo_promedio,unitaria,aprobada,0.001
+tests.test_pilot_corpus::test_no_fabricated_targets_or_training_metadata,integracion,aprobada,0.002
+tests.test_pilot_corpus::test_mismatched_source_rejected,integracion,aprobada,0.001
+tests.test_pilot_corpus::test_missing_adjudication_rejected,integracion,aprobada,0.001
+tests.test_pilot_corpus::test_editorial_targets_not_counted_as_human_adjudications,integracion,aprobada,0.001
+tests.test_report_calculations::test_empty_and_undefined_results,unitaria,aprobada,0.001
+tests.test_report_calculations::test_invalid_category[None],unitaria,aprobada,0.001
+tests.test_report_calculations::test_invalid_category[3],unitaria,aprobada,0.001
+tests.test_report_calculations::test_invalid_category[],unitaria,aprobada,0.001
+tests.test_report_calculations::test_invalid_category[odio],unitaria,aprobada,0.001
+tests.test_report_calculations::test_invalid_category[label4],unitaria,aprobada,0.001
+tests.test_report_calculations::test_invalid_counts[-1],unitaria,aprobada,0.001
+tests.test_report_calculations::test_invalid_counts[1.5],unitaria,aprobada,0.001
+tests.test_report_calculations::test_invalid_counts[True],unitaria,aprobada,0.001
+tests.test_report_calculations::test_invalid_counts[3],unitaria,aprobada,0.001
+tests.test_report_calculations::test_invalid_counts[nan],unitaria,aprobada,0.001
+tests.test_report_calculations::test_impossible_percentage[counts0],unitaria,aprobada,0.001
+tests.test_report_calculations::test_impossible_percentage[counts1],unitaria,aprobada,0.001
+tests.test_report_calculations::test_invalid_latency[-0.1],unitaria,aprobada,0.001
+tests.test_report_calculations::test_invalid_latency[nan],unitaria,aprobada,0.001
+tests.test_report_calculations::test_invalid_latency[inf],unitaria,aprobada,0.001
+tests.test_report_calculations::test_invalid_latency[True],unitaria,aprobada,0.001
+tests.test_report_calculations::test_invalid_latency[0.3],unitaria,aprobada,0.001
+tests.test_report_calculations::test_valid_labels,unitaria,aprobada,0.001
+tests.test_security::test_backup_restore_preserves_records_and_does_not_overwrite,integracion,aprobada,0.072
+tests.test_security::test_corrupt_archive_rejected_without_destination,integracion,aprobada,0.010
+tests.test_security::test_local_server_defaults,unitaria,aprobada,0.059
+tests.test_workflow::test_minimization_and_context,unitaria,aprobada,0.001
+tests.test_workflow::test_prepare_excludes_raw_and_deduplicates,integracion,aprobada,0.885
+tests.test_workflow::test_real_data_requires_evidence,integracion,aprobada,0.006
+tests.test_workflow::test_group_split_reproducible,integracion,aprobada,7.468
+tests.test_workflow::test_duplicates_cannot_leak,integracion,aprobada,0.160
+tests.test_workflow::test_selection_uses_validation_only,unitaria,aprobada,0.001
+tests.test_workflow::test_metrics_counts_and_missing_class,unitaria,aprobada,0.007
+tests.test_workflow::test_bootstrap_deterministic,unitaria,aprobada,0.266
+tests.test_workflow::test_anotations_and_adjudication,integracion,aprobada,0.051
+tests.test_workflow::test_kappa_perfect_and_aiken,integracion,aprobada,0.041
+tests.test_workflow::test_registry_does_not_fallback,integracion,aprobada,0.009
+tests.test_workflow::test_transformer_local_training_roundtrip,integracion,aprobada,0.617
+tests.test_workflow::test_streamlit_default_and_sections,sistema,aprobada,0.402
+tests.test_workflow::test_adjudication_overrides_initial_consensus,integracion,aprobada,0.029
+tests.test_workflow::test_language_review_blocks_training,integracion,aprobada,0.154
+tests.test_workflow::test_valid_manifest_and_timezone_dates,integracion,aprobada,0.035
+tests.test_workflow::test_training_run_does_not_overwrite,integracion,aprobada,2.009
+tests.test_workflow::test_history_roundtrip_minimizes_data,integracion,aprobada,0.014
+tests.test_workflow::test_three_subsystems_and_optional_history,sistema,aprobada,0.396
+tests.test_workflow::test_internal_annotation_separate,sistema,aprobada,0.245
+tests.test_workflow::test_corrupt_history_is_reported_without_overwrite,sistema,aprobada,0.274
+tests.test_workflow::test_invalid_run_can_return_to_demo,sistema,aprobada,0.309

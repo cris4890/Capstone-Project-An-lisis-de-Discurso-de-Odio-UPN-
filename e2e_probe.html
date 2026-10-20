@@ -1,0 +1,38 @@
+<!doctype html><html lang="es"><meta charset="utf-8">
+<style>body{font:13px sans-serif;color:#222;background:#fff}textarea{width:98%;height:100px}button{padding:6px}</style>
+<b>Laboratorio E2E · clic a resultado renderizado</b>
+<p id="status">Esperando envío. No incluye lectura ni escritura del comentario.</p>
+<textarea id="records" aria-label="Registros E2E" readonly>[]</textarea>
+<script>
+// Estado efímero de esta pestaña. Sin textos ni transmisión a terceros.
+const w = window.parent;
+const key = '__hatedetectE2E';
+if (!w[key]) {
+  const state = w[key] = {records: [], pending: null};
+  w.document.addEventListener('click', event => {
+    const button = event.target.closest('button');
+    if (!button || button.textContent.trim() !== 'Clasificar') return;
+    state.pending = {start: w.performance.now(), utc: new Date().toISOString(),
+      previous: w.document.querySelector('#hatedetect-result')?.dataset.request};
+  }, true);
+  state.observer = new w.MutationObserver(() => {
+    const marker = w.document.querySelector('#hatedetect-result');
+    const pending = state.pending;
+    if (!marker || !pending || marker.dataset.request === pending.previous || pending.finishing) return;
+    pending.finishing = true;
+    // Dos frames: una oportunidad de pintura después de la inserción del resultado.
+    w.requestAnimationFrame(() => w.requestAnimationFrame(() => {
+      state.records.push({sequence: state.records.length + 1, started_utc: pending.utc,
+        seconds: (w.performance.now() - pending.start) / 1000,
+        request_id: marker.dataset.request, prediction: marker.dataset.prediction,
+        method: 'capture_click_to_result_marker_two_animation_frames'});
+      state.pending = null;
+    }));
+  });
+  state.observer.observe(w.document.body, {childList:true, subtree:true});
+}
+setInterval(() => {
+  document.querySelector('#records').value = JSON.stringify(w[key].records);
+  document.querySelector('#status').textContent = `${w[key].records.length} resultados medidos. Aproximación del renderizado con dos frames; no mide percepción humana.`;
+}, 100);
+</script></html>
