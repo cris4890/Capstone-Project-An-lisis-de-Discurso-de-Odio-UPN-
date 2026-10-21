@@ -1,7 +1,7 @@
 # HateDetect: entrega técnica T2 con corpus sintético
 
-Fecha de trabajo: 21/10/2026. Base: `main`, commit `ba51992`.
-Rama de desarrollo: `codex/t2-corpus-sintetico`. No fusionar sin revisión del usuario.
+Fecha de actualización: 21/10/2026. Base verificada: `main`, commit `f6fe5e7`.
+Rama de desarrollo: `codex/fase3-validacion-corpus`. No fusionar sin revisión del usuario.
 
 ## Alcance
 
@@ -44,9 +44,11 @@ La validación acepta `es/en`, tres clases, comunidades del proyecto, IDs único
 origen sintético y campos obligatorios. Detecta duplicados normalizados y etiquetas
 contradictorias. La detección lingüística y el enmascaramiento no sustituyen revisión humana.
 
-En la herramienta existente, dos evaluadores registran clases y motivos; un tercero
-resuelve desacuerdos. Usar códigos reales del equipo. No copiar propuestas para simular
-independencia. Las marcas de tiempo de la herramienta corresponden al registro efectivo.
+En la herramienta, Jeanpierre (A) y Erick (B) registran clases y motivos de forma
+independiente; Crisdel (E3) ve y resuelve exclusivamente desacuerdos. Los códigos quedan
+vinculados al hash del corpus, hay progreso individual persistente y Cohen's Kappa se
+calcula antes de adjudicar. No copiar propuestas para simular independencia. Las marcas
+de tiempo corresponden al registro efectivo. Véase [la guía](guia_evaluadores.md).
 Modificar el CSV después cambia su hash: debe fijarse otra versión y revisarla.
 
 ## Entrenar y abrir el sistema
@@ -70,7 +72,8 @@ La identidad de los evaluadores no se autentica; el modo revisado acredita regis
 completos en la base local, no aprobación del profesor.
 
 `--include-transformer --epochs 3` incorpora XLM-RoBERTa; requiere descargar el modelo
-y recursos adicionales. La prueba diminuta local de persistencia no equivale a entrenar
+y recursos adicionales: acceso al checkpoint, conectividad o caché local, memoria y
+tiempo de cómputo. La prueba diminuta local de persistencia no equivale a entrenar
 ese checkpoint multilingüe sobre el corpus T2. No se sustituyó por BERT inglés ni se
 atribuyeron resultados de un modelo a otro.
 

@@ -85,7 +85,7 @@ st.sidebar.caption("Preparación del corpus · Equipo de investigación")
 
 st.title("Anotación independiente")
 st.caption("Uso local con evaluadores identificados por códigos. La identidad no se autentica; no publique este panel con datos restringidos.")
-st.markdown("Manual: consulte **docs/manual_anotacion.md**, versión 1.0 pendiente de validación por especialistas.")
+st.markdown("Manual: consulte **docs/t2/guia_evaluadores.md**. La revisión humana y la aceptación académica siguen pendientes.")
 uploaded = st.file_uploader("Corpus minimizado para anotar (CSV)", type=["csv"])
 if uploaded is None:
     st.info("Cargue un corpus preparado con identificadores internos. Cada evaluador verá el texto sin las etiquetas de los demás.")
@@ -99,18 +99,34 @@ if not {"id_comentario", "texto_limpio"}.issubset(frame) or frame.id_comentario.
 frame = frame[[c for c in SAFE_COLUMNS if c in frame]].copy()
 frame["texto_limpio"] = frame.texto_limpio.apply(clean_and_anonymize)
 store = AnnotationStore(ROOT/"private"/"annotations.sqlite3")
-evaluator = st.text_input("Código de evaluador")
-mode = st.radio("Actividad", ["Anotar", "Adjudicar", "Acuerdo y exportación"])
+role = st.selectbox("Rol", ["A", "B", "E3"], help="A: Jeanpierre; B: Erick; E3: Crisdel (adjudicación).")
+evaluator = st.text_input("Código privado de evaluador", type="password").strip()
+if not evaluator:
+    st.info("Ingrese su código para continuar. El código identifica registros, pero no autentica identidad.")
+    st.stop()
+try:
+    store.claim_role(corpus_hash, role, evaluator)
+except ValueError as exc:
+    st.error(str(exc))
+    st.stop()
+mode_options = ["Anotar", "Acuerdo y exportación"] if role in {"A", "B"} else ["Adjudicar", "Acuerdo y exportación"]
+mode = st.radio("Actividad", mode_options)
 annotations, decisions = store.tables(corpus_hash)
 if mode == "Anotar":
-    completed = set(annotations[annotations.evaluator == evaluator.strip()].unit)
-    full = set(annotations.groupby("unit").size().loc[lambda x: x >= 2].index)
-    pending = frame[~frame.id_comentario.isin(completed | full)]
+    status = store.progress(corpus_hash, evaluator, frame.id_comentario.tolist())
+    st.progress(status["fraction"], text=f'{status["completed"]} de {status["total"]} completados')
+    c1, c2 = st.columns(2)
+    c1.metric("Completados", status["completed"])
+    c2.metric("Pendientes", status["pending"])
+    completed = set(annotations[annotations.evaluator == evaluator].unit)
+    pending = frame[~frame.id_comentario.isin(completed)]
     if pending.empty:
         st.success("No hay unidades pendientes para este evaluador.")
     else:
         unit = st.selectbox("Unidad", pending.id_comentario.tolist())
-        st.write(pending.set_index("id_comentario").loc[unit, "texto_limpio"])
+        current = pending.set_index("id_comentario").loc[unit]
+        st.caption(f'ID: {unit} · Idioma: {current.get("idioma", "no indicado")}')
+        st.write(current["texto_limpio"])
         with st.form("annotation"):
             label = st.selectbox("Clase", ["Odio", "Ofensivo", "Neutro"])
             target = st.text_input("Grupo o atributo atacado (obligatorio para Odio)")
@@ -122,37 +138,40 @@ if mode == "Anotar":
                 except ValueError as exc:
                     st.error(str(exc))
 elif mode == "Adjudicar":
-    # Solo unidades completas; no revelar una primera anotación a otro anotador.
-    counts = annotations.groupby("unit").size()
-    units = [u for u in counts[counts == 2].index if u not in set(decisions.unit)]
+    roles = store.reviewers(corpus_hash)
+    if not {"A", "B"}.issubset(roles):
+        st.info("Los roles A y B deben registrarse antes de calcular acuerdo o adjudicar.")
+        st.stop()
+    agreement = store.agreement(corpus_hash, roles["A"], roles["B"])
+    st.metric("Cohen's Kappa previo a adjudicación", "No calculable" if agreement["kappa"] is None else f'{agreement["kappa"]:.3f}')
+    units = store.disagreements(corpus_hash)["pending"]
     if not units:
         st.info("No hay unidades con dos anotaciones pendientes de decisión.")
     else:
         unit = st.selectbox("Unidad para adjudicar", units)
         rows = annotations[annotations.unit == unit]
-        if not evaluator.strip() or evaluator.strip() in set(rows.evaluator):
-            st.info("Ingrese el código de un tercer evaluador.")
-        else:
-            st.write(frame.set_index("id_comentario").loc[unit, "texto_limpio"])
-            st.dataframe(rows[["evaluator", "label", "target", "reason"]], hide_index=True)
-            with st.form("decision"):
-                label = st.selectbox("Clase final", ["Odio", "Ofensivo", "Neutro"])
-                target = st.text_input("Grupo objetivo final")
-                reason = st.text_area("Justificación de la adjudicación")
-                if st.form_submit_button("Guardar decisión"):
-                    try:
-                        store.adjudicate(corpus_hash, unit, evaluator, label, target, reason)
-                        st.rerun()
-                    except ValueError as exc:
-                        st.error(str(exc))
+        st.write(frame.set_index("id_comentario").loc[unit, "texto_limpio"])
+        st.dataframe(rows[["evaluator", "label", "target", "reason"]], hide_index=True)
+        with st.form("decision"):
+            label = st.selectbox("Clase final", ["Odio", "Ofensivo", "Neutro"])
+            target = st.text_input("Grupo objetivo final")
+            reason = st.text_area("Justificación de la adjudicación")
+            if st.form_submit_button("Guardar decisión"):
+                try:
+                    store.adjudicate(corpus_hash, unit, evaluator, label, target, reason)
+                    st.rerun()
+                except ValueError as exc:
+                    st.error(str(exc))
 else:
-    evaluators = sorted(annotations.evaluator.unique())
-    if len(evaluators) >= 2:
-        a = st.selectbox("Evaluador A", evaluators)
-        b = st.selectbox("Evaluador B", [e for e in evaluators if e != a])
-        agreement = store.agreement(corpus_hash,a,b)
+    roles = store.reviewers(corpus_hash)
+    if {"A", "B"}.issubset(roles):
+        agreement = store.agreement(corpus_hash, roles["A"], roles["B"])
         st.json(agreement)
         st.download_button("Descargar informe de acuerdo", json.dumps(agreement, ensure_ascii=False, indent=2), file_name="acuerdo.json")
+        disagreements = store.disagreements(corpus_hash)
+        st.caption(f'Desacuerdos: {len(disagreements["all"])} · pendientes: {len(disagreements["pending"])}')
+    else:
+        st.info("Registre primero los roles A y B.")
     try:
         final = store.export(corpus_hash,frame)
         st.download_button("Descargar corpus anotado", final.to_csv(index=False), file_name="corpus_anotado.csv")
