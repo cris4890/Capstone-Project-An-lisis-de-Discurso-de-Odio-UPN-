@@ -1,0 +1,9 @@
+{
+  "criterion": "validation_macro_f1",
+  "selected_model": "logistic",
+  "scores": {
+    "baseline": 0.5555555555555555,
+    "logistic": 0.6857142857142856,
+    "svm": 0.6857142857142856
+  }
+}

@@ -1,0 +1,2 @@
+Ejecuci�n completa: C:\Users\user\Desktop\Capstone-Project-An-lisis-de-Discurso-de-Odio-UPN-\runs\t2_20261021_exploratorio
+Seleccionado por validaci�n: TF-IDF + LogisticRegression

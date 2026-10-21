@@ -1,0 +1,3 @@
+01_correcto exit= 0 casos= 10
+02_fallo_controlado exit= 1 casos= 10
+03_restaurado exit= 0 casos= 10

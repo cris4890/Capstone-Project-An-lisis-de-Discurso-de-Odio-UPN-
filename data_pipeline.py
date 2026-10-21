@@ -6,13 +6,12 @@ Proyecto: Análisis y Clasificación Automática del Discurso de Odio
           en Comunidades de Reddit (r/Millennials y r/GenZ).
 
 Este módulo proporciona:
-1. Generación de un corpus bilingüe sintético (español e inglés) representativo
-   de interacciones en Reddit, balanceado por comunidad, idioma y clase de discurso.
+1. Generación de un corpus bilingüe sintético (español e inglés), balanceado
+   por comunidad simulada, idioma y clase propuesta; no representa Reddit real.
 2. Funciones de limpieza, normalización Unicode y anonimización de texto
    (sustitución de nombres de usuario y enlaces web preservando emojis y signos clave).
 3. Pipeline automatizado para procesar el dataset y exportarlo en formatos CSV y Parquet.
 
-Autor: Senior Data Engineer (NLP & Python)
 """
 
 import logging
@@ -608,8 +607,13 @@ def process_and_save(
     from corpus import prepare_corpus
     if "origen" not in df.columns:
         raise ValueError("Declare la procedencia del corpus antes de procesarlo.")
-    df_processed, report = prepare_corpus(df)
     csv_path, parquet_path = Path(output_csv), Path(output_parquet)
+    destinations = [csv_path, parquet_path, csv_path.with_suffix(".quality.json")]
+    if len({p.resolve() for p in destinations}) != len(destinations):
+        raise ValueError("Las rutas de salida deben ser diferentes.")
+    if any(p.exists() for p in destinations):
+        raise FileExistsError("Use rutas nuevas; no se sobrescriben corpus ni evidencias anteriores.")
+    df_processed, report = prepare_corpus(df)
     csv_path.parent.mkdir(parents=True, exist_ok=True)
     parquet_path.parent.mkdir(parents=True, exist_ok=True)
     df_processed.to_csv(csv_path, index=False, encoding="utf-8")

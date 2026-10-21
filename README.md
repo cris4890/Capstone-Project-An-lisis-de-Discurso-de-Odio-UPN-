@@ -2,6 +2,25 @@
 
 Prototipo académico de apoyo a revisión humana para el PC4 UPN. Clasifica Odio, Ofensivo y Neutro; compara modelos y registra anotaciones. El corpus incluido es sintético: no acredita resultados sobre Reddit real ni prevalencia por generaciones.
 
+## Alcance vigente T2
+
+El solicitante comunica autorización docente para usar comentarios sintéticos del equipo
+durante el curso. No se exige Reddit real para T2. La autorización no equivale a revisión
+de las etiquetas ni a validación científica. [Procedimiento, ejecución y evidencia T2](docs/t2/README.md)
+y [HU-01 a HU-06 y matriz funcional](docs/t2/backlog_cumplimiento.md).
+
+```powershell
+.\.venv\Scripts\python.exe -m synthetic_corpus exportar --output private/t2_revision_v1
+.\.venv\Scripts\python.exe -m synthetic_corpus validar private/t2_revision_v1/corpus_para_anotar.csv --sin-etiquetas
+.\.venv\Scripts\python.exe train_models.py --data private/t2_revision_v1/corpus_exploratorio.csv --synthetic-mode exploratory
+```
+
+Los 72 ejemplos exportados quedan pendientes de revisión humana; las etiquetas del generador
+son propuestas. Los 30 casos KPI históricos están separados y se rechazan coincidencias
+normalizadas antes de entrenar. El modo revisado requiere el CSV exacto anotado y una base
+de anotaciones completa (`--synthetic-mode reviewed --annotation-db private/annotations.sqlite3`).
+Use siempre rutas nuevas para conservar evidencia.
+
 ## Entrega del Sprint 1
 
 [Paquete de entrega y evidencias](docs/sprint1/README.md): plan de desarrollo, Scrum, backlog, DoD, ramas, seguridad y guía del incremento. Periodo 14–20 de septiembre de 2026; fecha académica pendiente.
@@ -12,7 +31,7 @@ En Windows, desde la carpeta del proyecto:
 
 ```powershell
 python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m pip install -r requirements.lock.txt
 .\.venv\Scripts\python.exe -m pytest -q
 .\.venv\Scripts\python.exe -m streamlit run app.py --server.address 127.0.0.1
 ```

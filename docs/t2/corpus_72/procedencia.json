@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "exported_at_utc": "2026-10-21T20:03:06.865460+00:00",
+  "origin": "sintetico",
+  "source": "data_pipeline.generate_synthetic_data",
+  "generator_sha256": "b123e9e037c7f711c0210788e2c8adf7e923e1e0552b57896388314220c0cf64",
+  "rows": 72,
+  "review_status": "pendiente",
+  "reviewers": [],
+  "authors_confirmed": [],
+  "human_approval_date": null,
+  "scope": "T2 del curso; autorización docente comunicada por el solicitante, no acta verificada",
+  "quality": {
+    "input_rows": 72,
+    "output_rows": 72,
+    "removed_rows": 0,
+    "language_review": 0,
+    "origin": "sintetico",
+    "authorization_evidence_sha256": null,
+    "privacy_limit": "Enmascaramiento automático; requiere revisión humana de nombres y contexto identificable."
+  },
+  "kpi_isolation": {
+    "reserved_cases": 30,
+    "normalized_exact_overlap": 0,
+    "pilot_sha256": "a8f5c848fa83784fe36eb609bd876b25d96423ad444ab92ee8d899a262797171",
+    "limit": "No detecta paráfrasis ni acredita independencia científica de ejemplos conocidos."
+  },
+  "files_sha256": {
+    "corpus_exploratorio.csv": "93dfd982cd72b66ecd8b1466c8dc5a1164c862b693d494aa947bd14e1ad74fec",
+    "corpus_para_anotar.csv": "1b606e38d14c6ad4ff489df2f55b2c35761589c0f4fa8df156ab400effe776c9",
+    "plantilla_revision.csv": "e5dfabbce6d093e1bc356178a74e89229bef4462822410cf27e11a11d7657144",
+    "propuestas_generador.csv": "d5e1e4a1ca4daa02f71311ff568c96ed798095e2dd2a46066be6af66d1032378"
+  }
+}

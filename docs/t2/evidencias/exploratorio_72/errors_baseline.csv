@@ -1,0 +1,5 @@
+id_comentario,id_hilo,subreddit,idioma,tipo_contenido,etiqueta,prediction,correct
+e1a679cb-5997-532e-a956-04be84ece3be,1305bd90-6520-5de8-a709-c7627f012b19,r/Millennials,en,comentario,Odio,Neutro,False
+79eae5aa-1eb0-53f0-86a3-cdbc14335faf,ca290175-09e7-5375-8ba9-d53898fa0689,r/Millennials,en,comentario,Odio,Neutro,False
+4fbfefd4-3013-544a-aa4e-1f64fd29f5f0,42dfe2f6-71fd-560b-af87-c3d7f67f13ec,r/GenZ,es,comentario,Odio,Neutro,False
+6adfde46-d67c-500e-bdee-530e70f625c1,cc0d5175-f99e-558f-9060-ac14ce31e54a,r/GenZ,es,comentario,Odio,Neutro,False

@@ -1,0 +1,302 @@
+{
+  "fecha_utc": "2026-10-21T20:09:50.066606+00:00",
+  "python": "3.13.14 (tags/v3.13.14:fd17997, Jun 10 2026, 13:03:48) [MSC v.1944 64 bit (AMD64)]",
+  "fuentes_sha256": {
+    "data_pipeline.py": "b123e9e037c7f711c0210788e2c8adf7e923e1e0552b57896388314220c0cf64",
+    "context_rules.py": "2e50afc12d1c3f0aa7c7bfeb15d8963bb10e9d5d4b7af061aa9f3edcf7fbaf56",
+    "model_classes.py": "09c8c8ad3d10a669044afba7c31ec68bc52eab28a02683f5ebc436d2531560de",
+    "report_calculations.py": "ccd6ce932fc3a45977482c7e3154871198ac1d9d4498043baa09a3748fb67929",
+    "tests/test_laboratorio_unitarias.py": "7865bce5e34602cdcf5bd69f2d58fc44e991ba30fb902a1a0e86ff79dea55291"
+  },
+  "ejecuciones": [
+    {
+      "fase": "01_correcto",
+      "codigo_salida": 0,
+      "casos": [
+        {
+          "caso": "PU01",
+          "entrada": "'  Hola   mundo  '",
+          "esperado": "Hola mundo",
+          "observado": "Hola mundo",
+          "nombre": "test_p01_normaliza_espacios",
+          "segundos": "0.001",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "PU02",
+          "entrada": "Escribe a persona@example.com",
+          "esperado": "Escribe a [EMAIL]",
+          "observado": "Escribe a [EMAIL]",
+          "nombre": "test_p02_oculta_correo",
+          "segundos": "0.001",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "PU03",
+          "entrada": "Llámame al +51 999 123 456",
+          "esperado": "Llámame al [PHONE]",
+          "observado": "Llámame al [PHONE]",
+          "nombre": "test_p03_oculta_telefono",
+          "segundos": "0.001",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "PU04",
+          "entrada": "12345",
+          "esperado": "''",
+          "observado": "''",
+          "nombre": "test_p04_entrada_numerica",
+          "segundos": "0.001",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "PU05",
+          "entrada": "Eres un idiota.",
+          "esperado": "Ofensivo",
+          "observado": "Ofensivo",
+          "nombre": "test_p05_clasifica_insulto",
+          "segundos": "0.003",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "PU06",
+          "entrada": "['Odio', 'Neutro', 'Ofensivo', 'Odio']",
+          "esperado": "{'Odio': 2, 'Ofensivo': 1, 'Neutro': 1}",
+          "observado": "{'Odio': 2, 'Ofensivo': 1, 'Neutro': 1}",
+          "nombre": "test_p06_cuenta_categorias",
+          "segundos": "0.001",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "PU07",
+          "entrada": "Odio=3; total=10",
+          "esperado": "30 %",
+          "observado": "30 %",
+          "nombre": "test_p07_porcentaje_odio",
+          "segundos": "0.001",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "PU08",
+          "entrada": "Violento",
+          "esperado": "ValueError: Etiqueta inválida",
+          "observado": "ValueError: Etiqueta inválida",
+          "nombre": "test_p08_etiqueta_invalida",
+          "segundos": "0.001",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "PU09",
+          "entrada": "VP=6; FP=2",
+          "esperado": "75 %",
+          "observado": "75 %",
+          "nombre": "test_p09_precision_odio",
+          "segundos": "0.001",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "PU10",
+          "entrada": "0.20; 0.30; 0.40 segundos",
+          "esperado": "0.30 segundos",
+          "observado": "0.30 segundos",
+          "nombre": "test_p10_tiempo_promedio",
+          "segundos": "0.001",
+          "estado": "PASÓ"
+        }
+      ]
+    },
+    {
+      "fase": "02_fallo_controlado",
+      "codigo_salida": 1,
+      "casos": [
+        {
+          "caso": "PU01",
+          "entrada": "'  Hola   mundo  '",
+          "esperado": "Hola mundo",
+          "observado": "Hola mundo",
+          "nombre": "test_p01_normaliza_espacios",
+          "segundos": "0.001",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "PU02",
+          "entrada": "Escribe a persona@example.com",
+          "esperado": "Escribe a [EMAIL]",
+          "observado": "Escribe a [EMAIL]",
+          "nombre": "test_p02_oculta_correo",
+          "segundos": "0.001",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "PU03",
+          "entrada": "Llámame al +51 999 123 456",
+          "esperado": "Llámame al [PHONE]",
+          "observado": "Llámame al [PHONE]",
+          "nombre": "test_p03_oculta_telefono",
+          "segundos": "0.001",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "PU04",
+          "entrada": "12345",
+          "esperado": "''",
+          "observado": "''",
+          "nombre": "test_p04_entrada_numerica",
+          "segundos": "0.001",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "PU05",
+          "entrada": "Eres un idiota.",
+          "esperado": "Ofensivo",
+          "observado": "Ofensivo",
+          "nombre": "test_p05_clasifica_insulto",
+          "segundos": "0.003",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "PU06",
+          "entrada": "['Odio', 'Neutro', 'Ofensivo', 'Odio']",
+          "esperado": "{'Odio': 2, 'Ofensivo': 1, 'Neutro': 1}",
+          "observado": "{'Odio': 2, 'Ofensivo': 1, 'Neutro': 1}",
+          "nombre": "test_p06_cuenta_categorias",
+          "segundos": "0.001",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "PU07",
+          "entrada": "Odio=3; total=10",
+          "esperado": "30 %",
+          "observado": "30 %",
+          "nombre": "test_p07_porcentaje_odio",
+          "segundos": "0.001",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "PU08",
+          "entrada": "Violento",
+          "esperado": "ValueError: Etiqueta inválida",
+          "observado": "ValueError: Etiqueta inválida",
+          "nombre": "test_p08_etiqueta_invalida",
+          "segundos": "0.001",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "PU09",
+          "entrada": "VP=6; FP=2",
+          "esperado": "75 %",
+          "observado": "75 %",
+          "nombre": "test_p09_precision_odio",
+          "segundos": "0.001",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "PU10",
+          "entrada": "0.20; 0.30; 0.40 segundos",
+          "esperado": "0.30 segundos",
+          "observado": "0.90 segundos",
+          "nombre": "test_p10_tiempo_promedio",
+          "segundos": "0.001",
+          "estado": "FALLÓ"
+        }
+      ]
+    },
+    {
+      "fase": "03_restaurado",
+      "codigo_salida": 0,
+      "casos": [
+        {
+          "caso": "PU01",
+          "entrada": "'  Hola   mundo  '",
+          "esperado": "Hola mundo",
+          "observado": "Hola mundo",
+          "nombre": "test_p01_normaliza_espacios",
+          "segundos": "0.001",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "PU02",
+          "entrada": "Escribe a persona@example.com",
+          "esperado": "Escribe a [EMAIL]",
+          "observado": "Escribe a [EMAIL]",
+          "nombre": "test_p02_oculta_correo",
+          "segundos": "0.001",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "PU03",
+          "entrada": "Llámame al +51 999 123 456",
+          "esperado": "Llámame al [PHONE]",
+          "observado": "Llámame al [PHONE]",
+          "nombre": "test_p03_oculta_telefono",
+          "segundos": "0.001",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "PU04",
+          "entrada": "12345",
+          "esperado": "''",
+          "observado": "''",
+          "nombre": "test_p04_entrada_numerica",
+          "segundos": "0.001",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "PU05",
+          "entrada": "Eres un idiota.",
+          "esperado": "Ofensivo",
+          "observado": "Ofensivo",
+          "nombre": "test_p05_clasifica_insulto",
+          "segundos": "0.003",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "PU06",
+          "entrada": "['Odio', 'Neutro', 'Ofensivo', 'Odio']",
+          "esperado": "{'Odio': 2, 'Ofensivo': 1, 'Neutro': 1}",
+          "observado": "{'Odio': 2, 'Ofensivo': 1, 'Neutro': 1}",
+          "nombre": "test_p06_cuenta_categorias",
+          "segundos": "0.001",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "PU07",
+          "entrada": "Odio=3; total=10",
+          "esperado": "30 %",
+          "observado": "30 %",
+          "nombre": "test_p07_porcentaje_odio",
+          "segundos": "0.001",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "PU08",
+          "entrada": "Violento",
+          "esperado": "ValueError: Etiqueta inválida",
+          "observado": "ValueError: Etiqueta inválida",
+          "nombre": "test_p08_etiqueta_invalida",
+          "segundos": "0.001",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "PU09",
+          "entrada": "VP=6; FP=2",
+          "esperado": "75 %",
+          "observado": "75 %",
+          "nombre": "test_p09_precision_odio",
+          "segundos": "0.001",
+          "estado": "PASÓ"
+        },
+        {
+          "caso": "PU10",
+          "entrada": "0.20; 0.30; 0.40 segundos",
+          "esperado": "0.30 segundos",
+          "observado": "0.30 segundos",
+          "nombre": "test_p10_tiempo_promedio",
+          "segundos": "0.001",
+          "estado": "PASÓ"
+        }
+      ]
+    }
+  ],
+  "fuentes_intactas": true
+}

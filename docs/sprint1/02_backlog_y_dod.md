@@ -8,14 +8,21 @@ Periodo: 14–20 de septiembre de 2026. Entrega académica pendiente. Este backl
 
 ## Product Backlog priorizado
 
+Actualización de alcance T2 (21/10/2026): el solicitante comunica que el profesor
+autorizó comentarios sintéticos del equipo para desarrollar y evaluar durante el
+curso. Reddit real deja de ser condición de esta entrega; permanece en el alcance
+del futuro paper. Esto no certifica revisión humana de los 72 ejemplos ni aceptación
+de las historias. Se conservan HU-01 a HU-06, sin duplicarlas. El Sprint Backlog
+inferior conserva el registro histórico. Estado actual y evidencias: [T2](../t2/backlog_cumplimiento.md).
+
 | Historia S3 | Prioridad | Resultado esperado | Estado |
 |---|---|---|---|
-| HU-01 | Alta | Obtener datos permitidos y documentar procedencia. | Preparación; sin acceso concedido ni recolector. |
-| HU-02 | Alta | Minimizar datos e identificarlos internamente. | Implementado parcialmente; revisión y controles pendientes. |
-| HU-03 | Alta | Manual y anotación independiente. | Herramienta y borrador; evaluación humana pendiente. |
-| HU-04 | Alta | Comparar reglas, clásicos y Transformer. | Demostración sintética; Transformer real pendiente. |
-| HU-05 | Alta | Clasificar y mostrar puntuación cuando exista. | Incremento local. Historial se sustenta además en S5 y Sprint 6 de S3. |
-| HU-06 | Media | Métricas, errores y pruebas por idioma/comunidad. | Herramientas disponibles; evaluación real pendiente. |
+| HU-01 | Alta | Preparar corpus sintético permitido para T2 y documentar procedencia; Reddit autorizado para futuro paper. | Parcial: exportación y validación disponibles; ZIP integrado; revisión humana pendiente. |
+| HU-02 | Alta | Minimizar datos e identificarlos internamente. | Implementación local comprobable; revisión humana de privacidad pendiente. |
+| HU-03 | Alta | Manual y anotación independiente. | Herramientas implementadas; revisión del corpus T2 pendiente. |
+| HU-04 | Alta | Comparar reglas, clásicos y Transformer. | Parcial: entrenamiento clásico exploratorio; comparación con XLM-RoBERTa pendiente. |
+| HU-05 | Alta | Clasificar y mostrar puntuación cuando exista. | Implementación local; aceptación formal pendiente. Historial se sustenta además en S5 y Sprint 6 de S3. |
+| HU-06 | Media | Métricas, errores y pruebas por idioma/comunidad. | Reportes implementados para ejecuciones disponibles; aceptación formal pendiente. |
 
 ## Sprint Backlog
 

@@ -1,0 +1,2 @@
+# Preserve the exact bytes used by corpus provenance hashes across Windows checkouts.
+corpus_72/*.csv text eol=lf

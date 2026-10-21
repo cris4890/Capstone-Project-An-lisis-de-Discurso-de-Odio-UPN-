@@ -1,0 +1,7 @@
+{
+  "archivo": "HateDetect_Paquete_Corpus_T2_Listo.zip",
+  "sha256": "02af62dc7cae9ec7bedef04f3f920b7539958b2203dea0884612ea5ff5239483",
+  "revisiones_humanas": "pendientes",
+  "origen": "Adjunto del solicitante",
+  "script_integrado": "preparar_corpus_t2.py"
+}

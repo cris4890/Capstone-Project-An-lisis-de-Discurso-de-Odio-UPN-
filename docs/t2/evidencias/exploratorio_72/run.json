@@ -1,0 +1,1369 @@
+{
+  "schema_version": 2,
+  "created_at": "2026-10-21T15:03:30.649615-05:00",
+  "origin": "sintetico",
+  "quality": {
+    "origin": "sintetico",
+    "kpi_isolation": {
+      "reserved_cases": 30,
+      "normalized_exact_overlap": 0,
+      "pilot_sha256": "a8f5c848fa83784fe36eb609bd876b25d96423ad444ab92ee8d899a262797171",
+      "limit": "No detecta paráfrasis ni acredita independencia científica de ejemplos conocidos."
+    },
+    "review_status": "pendiente"
+  },
+  "source_sha256": "93dfd982cd72b66ecd8b1466c8dc5a1164c862b693d494aa947bd14e1ad74fec",
+  "evaluation_scope": "demostracion_tecnica_exploratoria",
+  "corpus_sha256": "0a7faf2ba6437e2dd1d62bc98b50e6b4152dabb86c700e77361683da4fc7a266",
+  "seed": 42,
+  "git_commit": "ba51992062c1d5176e614cf401c719f5ab6b8692",
+  "git_dirty": true,
+  "source_sha256_by_file": {
+    "annotations.py": "ce0475b03367ca9f2e328335043c87a49182d6860ec1fbb7d4d45f699ee1edac",
+    "annotation_app.py": "1a13b98b99df8ef9c806a5f0289ee8c87eb732e634ccbea36cc6bdd90a2a2abf",
+    "annotation_report.py": "039bc8d359e2ad6af9d9f38ea9734e6da0d19f9c074f847270fceca154b6f8bb",
+    "app.py": "9cf2b51e76149b508aad1556f0c1b721bcd3d8db1b4b2943e1579c4e4480786b",
+    "context_rules.py": "2e50afc12d1c3f0aa7c7bfeb15d8963bb10e9d5d4b7af061aa9f3edcf7fbaf56",
+    "corpus.py": "004327592cc2949a0dcaff3fbdc0d858d3d5793c69835178a9be4f3d67d5ea09",
+    "data_pipeline.py": "b123e9e037c7f711c0210788e2c8adf7e923e1e0552b57896388314220c0cf64",
+    "doccano_agreement.py": "746edc99ec40252a29d9ed2e7945fba4fb9d4ac247c5d7d06cfc9d3ef4b10314",
+    "doccano_import.py": "e6bfcb2c730b7cbf8902f92fb370dc5adff048b60f4c8d319f9fa88df6f63999",
+    "e2e_probe.py": "12e94f2ef471419e98b1a26e4492d29e92a463c904b5d108421800f90ba96597",
+    "experiment.py": "957c1ca3c80e51038c29646cde87f23f03d29b5dd69e75e48b7357453797ec49",
+    "history_store.py": "9e798bc3d17688628b349a142b7c226029dc116880ca045c1484b280c7519ae0",
+    "maintenance.py": "d80c090c961c6de12f59d8ff4f2baf392d4773fc52470483fa232eb98b95d56a",
+    "model_classes.py": "09c8c8ad3d10a669044afba7c31ec68bc52eab28a02683f5ebc436d2531560de",
+    "model_registry.py": "b720c801731fac8b723d7917e5c1b54ca6cba91f7679b8ff37a18a651904fd93",
+    "pilot_corpus.py": "3ca3c492faedd689a7db81b31b30e901d349ea5cd0ac2b0262f6d421c78a72db",
+    "report_calculations.py": "ccd6ce932fc3a45977482c7e3154871198ac1d9d4498043baa09a3748fb67929",
+    "synthetic_corpus.py": "316c91786eb76eb05bb1e11e994f2fbaf05500638391be7fe48591dd29abd1cc",
+    "train_models.py": "1963e0b8b86fd1d696ad7091c0407a2575566896b8a15a91caee31e6837d8e54"
+  },
+  "python": "3.13.14",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "split_sizes": {
+    "train": 50,
+    "validation": 11,
+    "test": 11
+  },
+  "test_partition_size": 11,
+  "selection_criterion": "validation_macro_f1",
+  "selected_model": "logistic",
+  "transformer_included": false,
+  "models": {
+    "baseline": {
+      "name": "Reglas de contexto v2",
+      "kind": "joblib",
+      "artifact": "baseline.pkl"
+    },
+    "logistic": {
+      "name": "TF-IDF + LogisticRegression",
+      "kind": "joblib",
+      "artifact": "logistic.pkl"
+    },
+    "svm": {
+      "name": "TF-IDF + LinearSVC",
+      "kind": "joblib",
+      "artifact": "svm.pkl"
+    }
+  },
+  "results": [
+    {
+      "accuracy": 0.6363636363636364,
+      "balanced_accuracy": 0.6666666666666666,
+      "macro_f1": 0.5333333333333333,
+      "per_class": {
+        "Odio": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 4,
+          "fp": 0,
+          "fn": 4,
+          "fnr": 1.0,
+          "fpr": 0.0
+        },
+        "Ofensivo": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 4,
+          "fp": 0,
+          "fn": 0,
+          "fnr": 0.0,
+          "fpr": 0.0
+        },
+        "Neutro": {
+          "precision": 0.42857142857142855,
+          "recall": 1.0,
+          "f1": 0.6,
+          "support": 3,
+          "fp": 4,
+          "fn": 0,
+          "fnr": 0.0,
+          "fpr": 0.5
+        }
+      },
+      "confusion_matrix": [
+        [
+          0,
+          0,
+          4
+        ],
+        [
+          0,
+          4,
+          0
+        ],
+        [
+          0,
+          0,
+          3
+        ]
+      ],
+      "class_order": [
+        "Odio",
+        "Ofensivo",
+        "Neutro"
+      ],
+      "n": 11,
+      "missing_classes": [],
+      "key": "baseline",
+      "model_name": "Reglas de contexto v2",
+      "validation_macro_f1": 0.5555555555555555,
+      "training_seconds": 8.460000026389025E-05,
+      "inference_seconds": 0.0018394999988231575,
+      "latency_ms_per_text": 0.16722727262028703,
+      "texts_per_second": 5979.885842368787,
+      "python_peak_bytes": 6523,
+      "memory_scope": "Python allocations only; excludes native tensors and GPU",
+      "bootstrap_95": {
+        "macro_f1": {
+          "low": 0.3333333333333333,
+          "high": 0.6296296296296297,
+          "valid_samples": 500
+        },
+        "precision_odio": {
+          "low": 0.0,
+          "high": 0.0,
+          "valid_samples": 498
+        },
+        "recall_odio": {
+          "low": 0.0,
+          "high": 0.0,
+          "valid_samples": 498
+        },
+        "fnr_odio": {
+          "low": 1.0,
+          "high": 1.0,
+          "valid_samples": 498
+        }
+      },
+      "subgroups": {
+        "idioma": {
+          "es": {
+            "accuracy": 0.6,
+            "balanced_accuracy": 0.6666666666666666,
+            "macro_f1": 0.5555555555555555,
+            "per_class": {
+              "Odio": {
+                "precision": 0.0,
+                "recall": 0.0,
+                "f1": 0.0,
+                "support": 2,
+                "fp": 0,
+                "fn": 2,
+                "fnr": 1.0,
+                "fpr": 0.0
+              },
+              "Ofensivo": {
+                "precision": 1.0,
+                "recall": 1.0,
+                "f1": 1.0,
+                "support": 1,
+                "fp": 0,
+                "fn": 0,
+                "fnr": 0.0,
+                "fpr": 0.0
+              },
+              "Neutro": {
+                "precision": 0.5,
+                "recall": 1.0,
+                "f1": 0.6666666666666666,
+                "support": 2,
+                "fp": 2,
+                "fn": 0,
+                "fnr": 0.0,
+                "fpr": 0.6666666666666666
+              }
+            },
+            "confusion_matrix": [
+              [
+                0,
+                0,
+                2
+              ],
+              [
+                0,
+                1,
+                0
+              ],
+              [
+                0,
+                0,
+                2
+              ]
+            ],
+            "class_order": [
+              "Odio",
+              "Ofensivo",
+              "Neutro"
+            ],
+            "n": 5,
+            "missing_classes": []
+          },
+          "en": {
+            "accuracy": 0.6666666666666666,
+            "balanced_accuracy": 0.6666666666666666,
+            "macro_f1": 0.5,
+            "per_class": {
+              "Odio": {
+                "precision": 0.0,
+                "recall": 0.0,
+                "f1": 0.0,
+                "support": 2,
+                "fp": 0,
+                "fn": 2,
+                "fnr": 1.0,
+                "fpr": 0.0
+              },
+              "Ofensivo": {
+                "precision": 1.0,
+                "recall": 1.0,
+                "f1": 1.0,
+                "support": 3,
+                "fp": 0,
+                "fn": 0,
+                "fnr": 0.0,
+                "fpr": 0.0
+              },
+              "Neutro": {
+                "precision": 0.3333333333333333,
+                "recall": 1.0,
+                "f1": 0.5,
+                "support": 1,
+                "fp": 2,
+                "fn": 0,
+                "fnr": 0.0,
+                "fpr": 0.4
+              }
+            },
+            "confusion_matrix": [
+              [
+                0,
+                0,
+                2
+              ],
+              [
+                0,
+                3,
+                0
+              ],
+              [
+                0,
+                0,
+                1
+              ]
+            ],
+            "class_order": [
+              "Odio",
+              "Ofensivo",
+              "Neutro"
+            ],
+            "n": 6,
+            "missing_classes": []
+          }
+        },
+        "subreddit": {
+          "r/Millennials": {
+            "accuracy": 0.6666666666666666,
+            "balanced_accuracy": 0.6666666666666666,
+            "macro_f1": 0.5,
+            "per_class": {
+              "Odio": {
+                "precision": 0.0,
+                "recall": 0.0,
+                "f1": 0.0,
+                "support": 2,
+                "fp": 0,
+                "fn": 2,
+                "fnr": 1.0,
+                "fpr": 0.0
+              },
+              "Ofensivo": {
+                "precision": 1.0,
+                "recall": 1.0,
+                "f1": 1.0,
+                "support": 3,
+                "fp": 0,
+                "fn": 0,
+                "fnr": 0.0,
+                "fpr": 0.0
+              },
+              "Neutro": {
+                "precision": 0.3333333333333333,
+                "recall": 1.0,
+                "f1": 0.5,
+                "support": 1,
+                "fp": 2,
+                "fn": 0,
+                "fnr": 0.0,
+                "fpr": 0.4
+              }
+            },
+            "confusion_matrix": [
+              [
+                0,
+                0,
+                2
+              ],
+              [
+                0,
+                3,
+                0
+              ],
+              [
+                0,
+                0,
+                1
+              ]
+            ],
+            "class_order": [
+              "Odio",
+              "Ofensivo",
+              "Neutro"
+            ],
+            "n": 6,
+            "missing_classes": []
+          },
+          "r/GenZ": {
+            "accuracy": 0.6,
+            "balanced_accuracy": 0.6666666666666666,
+            "macro_f1": 0.5555555555555555,
+            "per_class": {
+              "Odio": {
+                "precision": 0.0,
+                "recall": 0.0,
+                "f1": 0.0,
+                "support": 2,
+                "fp": 0,
+                "fn": 2,
+                "fnr": 1.0,
+                "fpr": 0.0
+              },
+              "Ofensivo": {
+                "precision": 1.0,
+                "recall": 1.0,
+                "f1": 1.0,
+                "support": 1,
+                "fp": 0,
+                "fn": 0,
+                "fnr": 0.0,
+                "fpr": 0.0
+              },
+              "Neutro": {
+                "precision": 0.5,
+                "recall": 1.0,
+                "f1": 0.6666666666666666,
+                "support": 2,
+                "fp": 2,
+                "fn": 0,
+                "fnr": 0.0,
+                "fpr": 0.6666666666666666
+              }
+            },
+            "confusion_matrix": [
+              [
+                0,
+                0,
+                2
+              ],
+              [
+                0,
+                1,
+                0
+              ],
+              [
+                0,
+                0,
+                2
+              ]
+            ],
+            "class_order": [
+              "Odio",
+              "Ofensivo",
+              "Neutro"
+            ],
+            "n": 5,
+            "missing_classes": []
+          }
+        },
+        "tipo_contenido": {
+          "comentario": {
+            "accuracy": 0.6363636363636364,
+            "balanced_accuracy": 0.6666666666666666,
+            "macro_f1": 0.5333333333333333,
+            "per_class": {
+              "Odio": {
+                "precision": 0.0,
+                "recall": 0.0,
+                "f1": 0.0,
+                "support": 4,
+                "fp": 0,
+                "fn": 4,
+                "fnr": 1.0,
+                "fpr": 0.0
+              },
+              "Ofensivo": {
+                "precision": 1.0,
+                "recall": 1.0,
+                "f1": 1.0,
+                "support": 4,
+                "fp": 0,
+                "fn": 0,
+                "fnr": 0.0,
+                "fpr": 0.0
+              },
+              "Neutro": {
+                "precision": 0.42857142857142855,
+                "recall": 1.0,
+                "f1": 0.6,
+                "support": 3,
+                "fp": 4,
+                "fn": 0,
+                "fnr": 0.0,
+                "fpr": 0.5
+              }
+            },
+            "confusion_matrix": [
+              [
+                0,
+                0,
+                4
+              ],
+              [
+                0,
+                4,
+                0
+              ],
+              [
+                0,
+                0,
+                3
+              ]
+            ],
+            "class_order": [
+              "Odio",
+              "Ofensivo",
+              "Neutro"
+            ],
+            "n": 11,
+            "missing_classes": []
+          }
+        }
+      },
+      "precision_odio": 0.0,
+      "recall_odio": 0.0,
+      "fnr_odio": 1.0,
+      "f1_odio": 0.0,
+      "f1_ofensivo": 1.0,
+      "f1_neutro": 0.6,
+      "functional": {
+        "n": 24,
+        "accuracy": 0.7916666666666666,
+        "by_category": {
+          "amenaza": 1.0,
+          "cita_denuncia": 0.5,
+          "contraargumento": 1.0,
+          "evasion": 0.0,
+          "identidad_neutral": 1.0,
+          "insulto": 1.0,
+          "ironia": 1.0,
+          "negacion": 1.0,
+          "neutral": 1.0,
+          "odio_explicito": 1.0,
+          "odio_implicito": 0.0,
+          "polisemia": 1.0,
+          "reapropiacion": 1.0
+        }
+      }
+    },
+    {
+      "accuracy": 0.5454545454545454,
+      "balanced_accuracy": 0.5277777777777778,
+      "macro_f1": 0.5357142857142857,
+      "per_class": {
+        "Odio": {
+          "precision": 0.75,
+          "recall": 0.75,
+          "f1": 0.75,
+          "support": 4,
+          "fp": 1,
+          "fn": 1,
+          "fnr": 0.25,
+          "fpr": 0.14285714285714285
+        },
+        "Ofensivo": {
+          "precision": 0.6666666666666666,
+          "recall": 0.5,
+          "f1": 0.5714285714285714,
+          "support": 4,
+          "fp": 1,
+          "fn": 2,
+          "fnr": 0.5,
+          "fpr": 0.14285714285714285
+        },
+        "Neutro": {
+          "precision": 0.25,
+          "recall": 0.3333333333333333,
+          "f1": 0.2857142857142857,
+          "support": 3,
+          "fp": 3,
+          "fn": 2,
+          "fnr": 0.6666666666666666,
+          "fpr": 0.375
+        }
+      },
+      "confusion_matrix": [
+        [
+          3,
+          0,
+          1
+        ],
+        [
+          0,
+          2,
+          2
+        ],
+        [
+          1,
+          1,
+          1
+        ]
+      ],
+      "class_order": [
+        "Odio",
+        "Ofensivo",
+        "Neutro"
+      ],
+      "n": 11,
+      "missing_classes": [],
+      "key": "logistic",
+      "model_name": "TF-IDF + LogisticRegression",
+      "validation_macro_f1": 0.6857142857142856,
+      "training_seconds": 0.00770849999935308,
+      "inference_seconds": 0.003287100000306964,
+      "latency_ms_per_text": 0.2988272727551785,
+      "texts_per_second": 3346.414772587622,
+      "python_peak_bytes": 8895,
+      "memory_scope": "Python allocations only; excludes native tensors and GPU",
+      "bootstrap_95": {
+        "macro_f1": {
+          "low": 0.22462121212121214,
+          "high": 0.768981481481481,
+          "valid_samples": 500
+        },
+        "precision_odio": {
+          "low": 0.26517857142857143,
+          "high": 1.0,
+          "valid_samples": 498
+        },
+        "recall_odio": {
+          "low": 0.2,
+          "high": 1.0,
+          "valid_samples": 498
+        },
+        "fnr_odio": {
+          "low": 0.0,
+          "high": 0.8,
+          "valid_samples": 498
+        }
+      },
+      "subgroups": {
+        "idioma": {
+          "es": {
+            "accuracy": 0.6,
+            "balanced_accuracy": 0.6666666666666666,
+            "macro_f1": 0.48888888888888893,
+            "per_class": {
+              "Odio": {
+                "precision": 0.6666666666666666,
+                "recall": 1.0,
+                "f1": 0.8,
+                "support": 2,
+                "fp": 1,
+                "fn": 0,
+                "fnr": 0.0,
+                "fpr": 0.3333333333333333
+              },
+              "Ofensivo": {
+                "precision": 0.5,
+                "recall": 1.0,
+                "f1": 0.6666666666666666,
+                "support": 1,
+                "fp": 1,
+                "fn": 0,
+                "fnr": 0.0,
+                "fpr": 0.25
+              },
+              "Neutro": {
+                "precision": 0.0,
+                "recall": 0.0,
+                "f1": 0.0,
+                "support": 2,
+                "fp": 0,
+                "fn": 2,
+                "fnr": 1.0,
+                "fpr": 0.0
+              }
+            },
+            "confusion_matrix": [
+              [
+                2,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                0
+              ],
+              [
+                1,
+                1,
+                0
+              ]
+            ],
+            "class_order": [
+              "Odio",
+              "Ofensivo",
+              "Neutro"
+            ],
+            "n": 5,
+            "missing_classes": []
+          },
+          "en": {
+            "accuracy": 0.5,
+            "balanced_accuracy": 0.611111111111111,
+            "macro_f1": 0.5222222222222221,
+            "per_class": {
+              "Odio": {
+                "precision": 1.0,
+                "recall": 0.5,
+                "f1": 0.6666666666666666,
+                "support": 2,
+                "fp": 0,
+                "fn": 1,
+                "fnr": 0.5,
+                "fpr": 0.0
+              },
+              "Ofensivo": {
+                "precision": 1.0,
+                "recall": 0.3333333333333333,
+                "f1": 0.5,
+                "support": 3,
+                "fp": 0,
+                "fn": 2,
+                "fnr": 0.6666666666666666,
+                "fpr": 0.0
+              },
+              "Neutro": {
+                "precision": 0.25,
+                "recall": 1.0,
+                "f1": 0.4,
+                "support": 1,
+                "fp": 3,
+                "fn": 0,
+                "fnr": 0.0,
+                "fpr": 0.6
+              }
+            },
+            "confusion_matrix": [
+              [
+                1,
+                0,
+                1
+              ],
+              [
+                0,
+                1,
+                2
+              ],
+              [
+                0,
+                0,
+                1
+              ]
+            ],
+            "class_order": [
+              "Odio",
+              "Ofensivo",
+              "Neutro"
+            ],
+            "n": 6,
+            "missing_classes": []
+          }
+        },
+        "subreddit": {
+          "r/Millennials": {
+            "accuracy": 0.5,
+            "balanced_accuracy": 0.38888888888888884,
+            "macro_f1": 0.4444444444444444,
+            "per_class": {
+              "Odio": {
+                "precision": 1.0,
+                "recall": 0.5,
+                "f1": 0.6666666666666666,
+                "support": 2,
+                "fp": 0,
+                "fn": 1,
+                "fnr": 0.5,
+                "fpr": 0.0
+              },
+              "Ofensivo": {
+                "precision": 0.6666666666666666,
+                "recall": 0.6666666666666666,
+                "f1": 0.6666666666666666,
+                "support": 3,
+                "fp": 1,
+                "fn": 1,
+                "fnr": 0.3333333333333333,
+                "fpr": 0.3333333333333333
+              },
+              "Neutro": {
+                "precision": 0.0,
+                "recall": 0.0,
+                "f1": 0.0,
+                "support": 1,
+                "fp": 2,
+                "fn": 1,
+                "fnr": 1.0,
+                "fpr": 0.4
+              }
+            },
+            "confusion_matrix": [
+              [
+                1,
+                0,
+                1
+              ],
+              [
+                0,
+                2,
+                1
+              ],
+              [
+                0,
+                1,
+                0
+              ]
+            ],
+            "class_order": [
+              "Odio",
+              "Ofensivo",
+              "Neutro"
+            ],
+            "n": 6,
+            "missing_classes": []
+          },
+          "r/GenZ": {
+            "accuracy": 0.6,
+            "balanced_accuracy": 0.5,
+            "macro_f1": 0.43333333333333335,
+            "per_class": {
+              "Odio": {
+                "precision": 0.6666666666666666,
+                "recall": 1.0,
+                "f1": 0.8,
+                "support": 2,
+                "fp": 1,
+                "fn": 0,
+                "fnr": 0.0,
+                "fpr": 0.3333333333333333
+              },
+              "Ofensivo": {
+                "precision": 0.0,
+                "recall": 0.0,
+                "f1": 0.0,
+                "support": 1,
+                "fp": 0,
+                "fn": 1,
+                "fnr": 1.0,
+                "fpr": 0.0
+              },
+              "Neutro": {
+                "precision": 0.5,
+                "recall": 0.5,
+                "f1": 0.5,
+                "support": 2,
+                "fp": 1,
+                "fn": 1,
+                "fnr": 0.5,
+                "fpr": 0.3333333333333333
+              }
+            },
+            "confusion_matrix": [
+              [
+                2,
+                0,
+                0
+              ],
+              [
+                0,
+                0,
+                1
+              ],
+              [
+                1,
+                0,
+                1
+              ]
+            ],
+            "class_order": [
+              "Odio",
+              "Ofensivo",
+              "Neutro"
+            ],
+            "n": 5,
+            "missing_classes": []
+          }
+        },
+        "tipo_contenido": {
+          "comentario": {
+            "accuracy": 0.5454545454545454,
+            "balanced_accuracy": 0.5277777777777778,
+            "macro_f1": 0.5357142857142857,
+            "per_class": {
+              "Odio": {
+                "precision": 0.75,
+                "recall": 0.75,
+                "f1": 0.75,
+                "support": 4,
+                "fp": 1,
+                "fn": 1,
+                "fnr": 0.25,
+                "fpr": 0.14285714285714285
+              },
+              "Ofensivo": {
+                "precision": 0.6666666666666666,
+                "recall": 0.5,
+                "f1": 0.5714285714285714,
+                "support": 4,
+                "fp": 1,
+                "fn": 2,
+                "fnr": 0.5,
+                "fpr": 0.14285714285714285
+              },
+              "Neutro": {
+                "precision": 0.25,
+                "recall": 0.3333333333333333,
+                "f1": 0.2857142857142857,
+                "support": 3,
+                "fp": 3,
+                "fn": 2,
+                "fnr": 0.6666666666666666,
+                "fpr": 0.375
+              }
+            },
+            "confusion_matrix": [
+              [
+                3,
+                0,
+                1
+              ],
+              [
+                0,
+                2,
+                2
+              ],
+              [
+                1,
+                1,
+                1
+              ]
+            ],
+            "class_order": [
+              "Odio",
+              "Ofensivo",
+              "Neutro"
+            ],
+            "n": 11,
+            "missing_classes": []
+          }
+        }
+      },
+      "precision_odio": 0.75,
+      "recall_odio": 0.75,
+      "fnr_odio": 0.25,
+      "f1_odio": 0.75,
+      "f1_ofensivo": 0.5714285714285714,
+      "f1_neutro": 0.2857142857142857,
+      "functional": {
+        "n": 24,
+        "accuracy": 0.5,
+        "by_category": {
+          "amenaza": 1.0,
+          "cita_denuncia": 0.0,
+          "contraargumento": 0.0,
+          "evasion": 1.0,
+          "identidad_neutral": 0.0,
+          "insulto": 1.0,
+          "ironia": 0.5,
+          "negacion": 0.0,
+          "neutral": 0.0,
+          "odio_explicito": 1.0,
+          "odio_implicito": 1.0,
+          "polisemia": 0.0,
+          "reapropiacion": 0.5
+        }
+      }
+    },
+    {
+      "accuracy": 0.5454545454545454,
+      "balanced_accuracy": 0.5,
+      "macro_f1": 0.47222222222222215,
+      "per_class": {
+        "Odio": {
+          "precision": 0.75,
+          "recall": 0.75,
+          "f1": 0.75,
+          "support": 4,
+          "fp": 1,
+          "fn": 1,
+          "fnr": 0.25,
+          "fpr": 0.14285714285714285
+        },
+        "Ofensivo": {
+          "precision": 0.6,
+          "recall": 0.75,
+          "f1": 0.6666666666666666,
+          "support": 4,
+          "fp": 2,
+          "fn": 1,
+          "fnr": 0.25,
+          "fpr": 0.2857142857142857
+        },
+        "Neutro": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 3,
+          "fp": 2,
+          "fn": 3,
+          "fnr": 1.0,
+          "fpr": 0.25
+        }
+      },
+      "confusion_matrix": [
+        [
+          3,
+          0,
+          1
+        ],
+        [
+          0,
+          3,
+          1
+        ],
+        [
+          1,
+          2,
+          0
+        ]
+      ],
+      "class_order": [
+        "Odio",
+        "Ofensivo",
+        "Neutro"
+      ],
+      "n": 11,
+      "missing_classes": [],
+      "key": "svm",
+      "model_name": "TF-IDF + LinearSVC",
+      "validation_macro_f1": 0.6857142857142856,
+      "training_seconds": 0.003950800000893651,
+      "inference_seconds": 0.002891500000259839,
+      "latency_ms_per_text": 0.2628636363872581,
+      "texts_per_second": 3804.253847142143,
+      "python_peak_bytes": 8895,
+      "memory_scope": "Python allocations only; excludes native tensors and GPU",
+      "bootstrap_95": {
+        "macro_f1": {
+          "low": 0.21930555555555556,
+          "high": 0.6190476190476191,
+          "valid_samples": 500
+        },
+        "precision_odio": {
+          "low": 0.26517857142857143,
+          "high": 1.0,
+          "valid_samples": 498
+        },
+        "recall_odio": {
+          "low": 0.2,
+          "high": 1.0,
+          "valid_samples": 498
+        },
+        "fnr_odio": {
+          "low": 0.0,
+          "high": 0.8,
+          "valid_samples": 498
+        }
+      },
+      "subgroups": {
+        "idioma": {
+          "es": {
+            "accuracy": 0.6,
+            "balanced_accuracy": 0.6666666666666666,
+            "macro_f1": 0.48888888888888893,
+            "per_class": {
+              "Odio": {
+                "precision": 0.6666666666666666,
+                "recall": 1.0,
+                "f1": 0.8,
+                "support": 2,
+                "fp": 1,
+                "fn": 0,
+                "fnr": 0.0,
+                "fpr": 0.3333333333333333
+              },
+              "Ofensivo": {
+                "precision": 0.5,
+                "recall": 1.0,
+                "f1": 0.6666666666666666,
+                "support": 1,
+                "fp": 1,
+                "fn": 0,
+                "fnr": 0.0,
+                "fpr": 0.25
+              },
+              "Neutro": {
+                "precision": 0.0,
+                "recall": 0.0,
+                "f1": 0.0,
+                "support": 2,
+                "fp": 0,
+                "fn": 2,
+                "fnr": 1.0,
+                "fpr": 0.0
+              }
+            },
+            "confusion_matrix": [
+              [
+                2,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                0
+              ],
+              [
+                1,
+                1,
+                0
+              ]
+            ],
+            "class_order": [
+              "Odio",
+              "Ofensivo",
+              "Neutro"
+            ],
+            "n": 5,
+            "missing_classes": []
+          },
+          "en": {
+            "accuracy": 0.5,
+            "balanced_accuracy": 0.38888888888888884,
+            "macro_f1": 0.4444444444444444,
+            "per_class": {
+              "Odio": {
+                "precision": 1.0,
+                "recall": 0.5,
+                "f1": 0.6666666666666666,
+                "support": 2,
+                "fp": 0,
+                "fn": 1,
+                "fnr": 0.5,
+                "fpr": 0.0
+              },
+              "Ofensivo": {
+                "precision": 0.6666666666666666,
+                "recall": 0.6666666666666666,
+                "f1": 0.6666666666666666,
+                "support": 3,
+                "fp": 1,
+                "fn": 1,
+                "fnr": 0.3333333333333333,
+                "fpr": 0.3333333333333333
+              },
+              "Neutro": {
+                "precision": 0.0,
+                "recall": 0.0,
+                "f1": 0.0,
+                "support": 1,
+                "fp": 2,
+                "fn": 1,
+                "fnr": 1.0,
+                "fpr": 0.4
+              }
+            },
+            "confusion_matrix": [
+              [
+                1,
+                0,
+                1
+              ],
+              [
+                0,
+                2,
+                1
+              ],
+              [
+                0,
+                1,
+                0
+              ]
+            ],
+            "class_order": [
+              "Odio",
+              "Ofensivo",
+              "Neutro"
+            ],
+            "n": 6,
+            "missing_classes": []
+          }
+        },
+        "subreddit": {
+          "r/Millennials": {
+            "accuracy": 0.6666666666666666,
+            "balanced_accuracy": 0.5,
+            "macro_f1": 0.5079365079365079,
+            "per_class": {
+              "Odio": {
+                "precision": 1.0,
+                "recall": 0.5,
+                "f1": 0.6666666666666666,
+                "support": 2,
+                "fp": 0,
+                "fn": 1,
+                "fnr": 0.5,
+                "fpr": 0.0
+              },
+              "Ofensivo": {
+                "precision": 0.75,
+                "recall": 1.0,
+                "f1": 0.8571428571428571,
+                "support": 3,
+                "fp": 1,
+                "fn": 0,
+                "fnr": 0.0,
+                "fpr": 0.3333333333333333
+              },
+              "Neutro": {
+                "precision": 0.0,
+                "recall": 0.0,
+                "f1": 0.0,
+                "support": 1,
+                "fp": 1,
+                "fn": 1,
+                "fnr": 1.0,
+                "fpr": 0.2
+              }
+            },
+            "confusion_matrix": [
+              [
+                1,
+                0,
+                1
+              ],
+              [
+                0,
+                3,
+                0
+              ],
+              [
+                0,
+                1,
+                0
+              ]
+            ],
+            "class_order": [
+              "Odio",
+              "Ofensivo",
+              "Neutro"
+            ],
+            "n": 6,
+            "missing_classes": []
+          },
+          "r/GenZ": {
+            "accuracy": 0.4,
+            "balanced_accuracy": 0.3333333333333333,
+            "macro_f1": 0.26666666666666666,
+            "per_class": {
+              "Odio": {
+                "precision": 0.6666666666666666,
+                "recall": 1.0,
+                "f1": 0.8,
+                "support": 2,
+                "fp": 1,
+                "fn": 0,
+                "fnr": 0.0,
+                "fpr": 0.3333333333333333
+              },
+              "Ofensivo": {
+                "precision": 0.0,
+                "recall": 0.0,
+                "f1": 0.0,
+                "support": 1,
+                "fp": 1,
+                "fn": 1,
+                "fnr": 1.0,
+                "fpr": 0.25
+              },
+              "Neutro": {
+                "precision": 0.0,
+                "recall": 0.0,
+                "f1": 0.0,
+                "support": 2,
+                "fp": 1,
+                "fn": 2,
+                "fnr": 1.0,
+                "fpr": 0.3333333333333333
+              }
+            },
+            "confusion_matrix": [
+              [
+                2,
+                0,
+                0
+              ],
+              [
+                0,
+                0,
+                1
+              ],
+              [
+                1,
+                1,
+                0
+              ]
+            ],
+            "class_order": [
+              "Odio",
+              "Ofensivo",
+              "Neutro"
+            ],
+            "n": 5,
+            "missing_classes": []
+          }
+        },
+        "tipo_contenido": {
+          "comentario": {
+            "accuracy": 0.5454545454545454,
+            "balanced_accuracy": 0.5,
+            "macro_f1": 0.47222222222222215,
+            "per_class": {
+              "Odio": {
+                "precision": 0.75,
+                "recall": 0.75,
+                "f1": 0.75,
+                "support": 4,
+                "fp": 1,
+                "fn": 1,
+                "fnr": 0.25,
+                "fpr": 0.14285714285714285
+              },
+              "Ofensivo": {
+                "precision": 0.6,
+                "recall": 0.75,
+                "f1": 0.6666666666666666,
+                "support": 4,
+                "fp": 2,
+                "fn": 1,
+                "fnr": 0.25,
+                "fpr": 0.2857142857142857
+              },
+              "Neutro": {
+                "precision": 0.0,
+                "recall": 0.0,
+                "f1": 0.0,
+                "support": 3,
+                "fp": 2,
+                "fn": 3,
+                "fnr": 1.0,
+                "fpr": 0.25
+              }
+            },
+            "confusion_matrix": [
+              [
+                3,
+                0,
+                1
+              ],
+              [
+                0,
+                3,
+                1
+              ],
+              [
+                1,
+                2,
+                0
+              ]
+            ],
+            "class_order": [
+              "Odio",
+              "Ofensivo",
+              "Neutro"
+            ],
+            "n": 11,
+            "missing_classes": []
+          }
+        }
+      },
+      "precision_odio": 0.75,
+      "recall_odio": 0.75,
+      "fnr_odio": 0.25,
+      "f1_odio": 0.75,
+      "f1_ofensivo": 0.6666666666666666,
+      "f1_neutro": 0.0,
+      "functional": {
+        "n": 24,
+        "accuracy": 0.5,
+        "by_category": {
+          "amenaza": 1.0,
+          "cita_denuncia": 0.0,
+          "contraargumento": 0.0,
+          "evasion": 1.0,
+          "identidad_neutral": 0.0,
+          "insulto": 1.0,
+          "ironia": 0.5,
+          "negacion": 0.0,
+          "neutral": 0.0,
+          "odio_explicito": 1.0,
+          "odio_implicito": 1.0,
+          "polisemia": 0.0,
+          "reapropiacion": 0.5
+        }
+      }
+    }
+  ],
+  "limitations": [
+    "Revisión de etiquetas: pendiente",
+    "Corpus sintético: no estima prevalencia en Reddit.",
+    "Probabilidades no calibradas; requieren revisión humana.",
+    "Los intervalos son exploratorios con muestras pequeñas."
+  ],
+  "public_evidence_note": "Copia publica: se excluyeron los nombres y hashes de dos scripts privados ajenos al producto. Metricas intactas; original conservado localmente en runs/t2_20261021_exploratorio/run.json."
+}
