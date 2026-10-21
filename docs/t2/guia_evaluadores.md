@@ -33,6 +33,10 @@ CSV y no puede sustituirse desde el panel.
 5. Usar la barra y los contadores para continuar hasta 72/72. Al volver a abrir
    el panel con el mismo CSV y código, sólo aparecerán los pendientes.
 
+La concordancia, matriz y distribuciones de etiquetas permanecen ocultas para A
+y B mientras cualquiera tenga unidades pendientes. Se habilitan para ambos sólo
+después de completar las dos revisiones, para no condicionar decisiones.
+
 ## Adjudicador E3
 
 1. Esperar a que A y B terminen los mismos 72 textos.
@@ -43,6 +47,10 @@ CSV y no puede sustituirse desde el panel.
 4. Registrar clase final, grupo objetivo cuando corresponda y justificación.
 5. Exportar sólo cuando no falten anotaciones ni adjudicaciones. Guardar el CSV
    final con un nombre nuevo; no modificar la base ni el CSV fuente.
+
+En corpus con roles registrados, la exportación acepta exclusivamente las
+anotaciones vinculadas a A y B. Las bases de pilotos anteriores que no poseen la
+tabla de roles mantienen la compatibilidad con su par histórico de evaluadores.
 
 ## Evidencias para cerrar HU-01 y HU-03
 

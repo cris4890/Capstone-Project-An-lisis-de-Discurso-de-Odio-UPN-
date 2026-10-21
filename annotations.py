@@ -90,9 +90,24 @@ class AnnotationStore:
         return {"total": len(units), "completed": done, "pending": len(units) - done,
                 "fraction": done / len(units) if units else 0.0}
 
+    def review_completion(self, corpus, units):
+        """Estado de A/B; controla cuándo puede revelarse la concordancia."""
+        pair = self._reviewer_pair(corpus)
+        if not pair:
+            return {"complete": False, "reviewers": {}}
+        progress = {role: self.progress(corpus, evaluator, units)
+                    for role, evaluator in zip(("A", "B"), pair)}
+        return {"complete": all(item["pending"] == 0 for item in progress.values()),
+                "reviewers": progress}
+
     def _reviewer_pair(self, corpus):
         roles = self.reviewers(corpus)
         return (roles["A"], roles["B"]) if {"A", "B"}.issubset(roles) else None
+
+    @staticmethod
+    def _normalized_target(value):
+        """Forma canónica usada en todos los controles de concordancia."""
+        return " ".join(str(value or "").split()).casefold()
 
     def disagreements(self, corpus, evaluator_a=None, evaluator_b=None):
         pair = (evaluator_a, evaluator_b) if evaluator_a and evaluator_b else self._reviewer_pair(corpus)
@@ -103,7 +118,7 @@ class AnnotationStore:
         units = []
         for unit, rows in paired.groupby("unit"):
             labels = rows.label.fillna("").astype(str).str.strip()
-            targets = rows.target.fillna("").astype(str).str.strip().str.casefold()
+            targets = rows.target.map(self._normalized_target)
             if labels.nunique() > 1 or targets.nunique() > 1:
                 units.append(unit)
         decided = set(decisions.unit)
@@ -133,7 +148,7 @@ class AnnotationStore:
             if roles.get("E3") and evaluator.strip() != roles["E3"]:
                 raise ValueError("La decisión debe registrarla el código vinculado al rol E3.")
             labels = {r[1] for r in rows}
-            targets = {str(r[2] or "").strip().casefold() for r in rows}
+            targets = {self._normalized_target(r[2]) for r in rows}
             if len(labels) == 1 and len(targets) == 1:
                 raise ValueError("Solo los desacuerdos pueden adjudicarse.")
             try:
@@ -156,7 +171,8 @@ class AnnotationStore:
         right = annotations[annotations.evaluator == evaluator_b]
         pairs = left.merge(right, on=["corpus", "unit"], suffixes=("_a", "_b"))
         if pairs.empty:
-            return {"n": 0, "kappa": None, "meets_target": False}
+            return {"n": 0, "kappa": None, "meets_target": False,
+                    "stage": "pre_adjudication"}
         import math
         kappa = float(cohen_kappa_score(pairs.label_a, pairs.label_b, labels=CLASSES))
         kappa = kappa if math.isfinite(kappa) else None
@@ -182,7 +198,8 @@ class AnnotationStore:
             if len(decision) == 1:
                 row = decision.iloc[0]
                 finalized.append((row.label,row.target,row.reason))
-            elif rows.label.nunique() == 1 and rows.target.fillna("").nunique() == 1:
+            elif (rows.label.nunique() == 1 and
+                  rows.target.map(self._normalized_target).nunique() == 1):
                 row = rows.iloc[0]
                 finalized.append((row.label,row.target,row.reason))
             else:

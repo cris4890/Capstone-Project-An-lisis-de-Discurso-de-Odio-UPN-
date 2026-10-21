@@ -70,3 +70,49 @@ def test_agreement_is_explicitly_pre_adjudication(tmp_path):
     report = store.agreement("corpus", "A", "B")
     assert report["n"] == 3 and report["kappa"] == 1
     assert report["stage"] == "pre_adjudication"
+
+
+def test_agreement_visibility_waits_for_both_registered_reviewers(tmp_path):
+    store = AnnotationStore(tmp_path / "annotations.sqlite3")
+    store.claim_role("corpus", "A", "CODE-A")
+    store.claim_role("corpus", "B", "CODE-B")
+    units = ["u1", "u2"]
+    for unit in units:
+        store.record("corpus", unit, "CODE-A", "Neutro", "", "Sin ataque")
+    store.record("corpus", "u1", "CODE-B", "Neutro", "", "Sin ataque")
+    status = store.review_completion("corpus", units)
+    assert status["complete"] is False
+    assert status["reviewers"]["A"]["pending"] == 0
+    assert status["reviewers"]["B"]["pending"] == 1
+    store.record("corpus", "u2", "CODE-B", "Neutro", "", "Sin ataque")
+    assert store.review_completion("corpus", units)["complete"] is True
+
+
+def test_target_case_and_whitespace_are_consistent_everywhere(tmp_path):
+    store = AnnotationStore(tmp_path / "annotations.sqlite3")
+    for role, code in [("A", "CODE-A"), ("B", "CODE-B"), ("E3", "CODE-E3")]:
+        store.claim_role("corpus", role, code)
+    store.record("corpus", "u", "CODE-A", "Odio", "Personas Migrantes", "Ataque grupal")
+    store.record("corpus", "u", "CODE-B", "Odio", "  personas   migrantes  ", "Mismo grupo")
+    assert store.disagreements("corpus")["all"] == []
+    with pytest.raises(ValueError, match="desacuerdos"):
+        store.adjudicate("corpus", "u", "CODE-E3", "Odio", "personas migrantes", "No corresponde")
+    frame = pd.DataFrame({"id_comentario": ["u"], "texto_limpio": ["Texto"]})
+    assert store.export("corpus", frame).etiqueta.tolist() == ["Odio"]
+
+
+def test_registered_export_requires_a_and_b_but_legacy_pair_still_works(tmp_path):
+    frame = pd.DataFrame({"id_comentario": ["u"], "texto_limpio": ["Texto"]})
+    registered = AnnotationStore(tmp_path / "registered.sqlite3")
+    registered.claim_role("corpus", "A", "CODE-A")
+    registered.claim_role("corpus", "B", "CODE-B")
+    registered.record("corpus", "u", "CODE-A", "Neutro", "", "Sin ataque")
+    with pytest.raises(ValueError, match="dos anotaciones"):
+        registered.export("corpus", frame)
+    registered.record("corpus", "u", "CODE-B", "Neutro", "", "Sin ataque")
+    assert registered.export("corpus", frame).etiqueta.tolist() == ["Neutro"]
+
+    legacy = AnnotationStore(tmp_path / "legacy.sqlite3")
+    for evaluator in ["PILOT-1", "PILOT-2"]:
+        legacy.record("old-corpus", "u", evaluator, "Neutro", "", "Piloto anterior")
+    assert legacy.export("old-corpus", frame).etiqueta.tolist() == ["Neutro"]

@@ -59,10 +59,11 @@ condicionada. Esto mejora el flujo, pero no cambia el estado parcial de HU-01/HU
 Jeanpierre y Erick aún deben revisar los 72 textos y Crisdel debe resolver los
 desacuerdos reales. La aceptación académica también continúa pendiente.
 
-Verificación local de la Fase 3: **147 pruebas aprobadas, 0 fallidas** en 35,96 s.
-El conteo incluye las 142 pruebas heredadas y 5 casos nuevos de roles, progreso,
-reanudación, desacuerdos, concordancia y condiciones de exportación. No se modifica
-el inventario histórico de 142 pruebas del PR #2.
+Verificación local actualizada de la Fase 3: **150 pruebas aprobadas, 0 fallidas**
+en 35,57 s. El conteo incluye las 142 pruebas heredadas y 8 casos nuevos de roles,
+progreso, reanudación, independencia, normalización de objetivos, desacuerdos,
+concordancia y condiciones de exportación. No se modifica el inventario histórico
+de 142 pruebas del PR #2.
 
 **No se acredita el 100 % de T2**: falta revisar humanamente el corpus, completar la comparación exigida por HU-04 o registrar una modificación aprobada de ese alcance, y realizar la aceptación formal. La autorización para datos sintéticos se registra como comunicación del solicitante; no se inventó un acta del profesor. Reddit no bloquea T2 según esa autorización; permanece como requisito metodológico del futuro paper.
 

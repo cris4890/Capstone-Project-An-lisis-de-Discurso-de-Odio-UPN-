@@ -165,11 +165,16 @@ elif mode == "Adjudicar":
 else:
     roles = store.reviewers(corpus_hash)
     if {"A", "B"}.issubset(roles):
-        agreement = store.agreement(corpus_hash, roles["A"], roles["B"])
-        st.json(agreement)
-        st.download_button("Descargar informe de acuerdo", json.dumps(agreement, ensure_ascii=False, indent=2), file_name="acuerdo.json")
-        disagreements = store.disagreements(corpus_hash)
-        st.caption(f'Desacuerdos: {len(disagreements["all"])} · pendientes: {len(disagreements["pending"])}')
+        completion = store.review_completion(corpus_hash, frame.id_comentario.tolist())
+        if role in {"A", "B"} and not completion["complete"]:
+            own = completion["reviewers"][role]
+            st.info(f'La concordancia se habilitará cuando A y B completen el corpus. Tu progreso: {own["completed"]}/{own["total"]}.')
+        else:
+            agreement = store.agreement(corpus_hash, roles["A"], roles["B"])
+            st.json(agreement)
+            st.download_button("Descargar informe de acuerdo", json.dumps(agreement, ensure_ascii=False, indent=2), file_name="acuerdo.json")
+            disagreements = store.disagreements(corpus_hash)
+            st.caption(f'Desacuerdos: {len(disagreements["all"])} · pendientes: {len(disagreements["pending"])}')
     else:
         st.info("Registre primero los roles A y B.")
     try:
