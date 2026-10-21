@@ -116,3 +116,21 @@ def test_registered_export_requires_a_and_b_but_legacy_pair_still_works(tmp_path
     for evaluator in ["PILOT-1", "PILOT-2"]:
         legacy.record("old-corpus", "u", evaluator, "Neutro", "", "Piloto anterior")
     assert legacy.export("old-corpus", frame).etiqueta.tolist() == ["Neutro"]
+
+
+def test_partial_role_registration_is_never_treated_as_legacy(tmp_path):
+    store = AnnotationStore(tmp_path / "partial.sqlite3")
+    frame = pd.DataFrame({"id_comentario": ["u"], "texto_limpio": ["Texto"]})
+    store.claim_role("corpus", "A", "CODE-A")
+    store.record("corpus", "u", "CODE-A", "Neutro", "", "Sin ataque")
+    with pytest.raises(ValueError, match="roles A y B"):
+        store.record("corpus", "u", "UNREGISTERED", "Neutro", "", "No autorizado")
+    with pytest.raises(ValueError, match="registrar los roles A y B"):
+        store.export("corpus", frame)
+
+    only_e3 = AnnotationStore(tmp_path / "only-e3.sqlite3")
+    only_e3.claim_role("corpus", "E3", "CODE-E3")
+    with pytest.raises(ValueError, match="roles A y B"):
+        only_e3.record("corpus", "u", "CODE-E3", "Neutro", "", "No puede anotar")
+    with pytest.raises(ValueError, match="registrar los roles A y B"):
+        only_e3.export("corpus", frame)

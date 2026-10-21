@@ -59,8 +59,8 @@ condicionada. Esto mejora el flujo, pero no cambia el estado parcial de HU-01/HU
 Jeanpierre y Erick aún deben revisar los 72 textos y Crisdel debe resolver los
 desacuerdos reales. La aceptación académica también continúa pendiente.
 
-Verificación local actualizada de la Fase 3: **150 pruebas aprobadas, 0 fallidas**
-en 35,57 s. El conteo incluye las 142 pruebas heredadas y 8 casos nuevos de roles,
+Verificación local actualizada de la Fase 3: **151 pruebas aprobadas, 0 fallidas**
+en 36,13 s. El conteo incluye las 142 pruebas heredadas y 9 casos nuevos de roles,
 progreso, reanudación, independencia, normalización de objetivos, desacuerdos,
 concordancia y condiciones de exportación. No se modifica el inventario histórico
 de 142 pruebas del PR #2.

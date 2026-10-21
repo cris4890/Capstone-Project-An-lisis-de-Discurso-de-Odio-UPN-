@@ -41,7 +41,8 @@ class AnnotationStore:
         if not all(str(x).strip() for x in [corpus, unit, evaluator, manual_version]):
             raise ValueError("Complete identificadores y versión del manual.")
         roles = self.reviewers(corpus)
-        if {"A", "B"}.issubset(roles) and evaluator.strip() not in {roles["A"], roles["B"]}:
+        allowed_reviewers = {roles[role] for role in ("A", "B") if role in roles}
+        if roles and evaluator.strip() not in allowed_reviewers:
             raise ValueError("Solo los códigos vinculados a los roles A y B pueden anotar.")
         with self.connect() as conn:
             count = conn.execute("SELECT count(*) FROM annotations WHERE corpus=? AND unit=?", (corpus,unit)).fetchone()[0]
@@ -184,8 +185,11 @@ class AnnotationStore:
 
     def export(self, corpus, frame):
         annotations, decisions = self.tables(corpus)
-        pair = self._reviewer_pair(corpus)
-        if pair:
+        roles = self.reviewers(corpus)
+        if roles and not {"A", "B"}.issubset(roles):
+            raise ValueError("La exportación requiere registrar los roles A y B.")
+        pair = (roles["A"], roles["B"]) if roles else None
+        if pair is not None:
             annotations = annotations[annotations.evaluator.isin(pair)]
         result = frame.drop(columns=["etiqueta", "grupo_objetivo", "justificacion"], errors="ignore").copy()
         finalized = []
