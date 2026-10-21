@@ -9,7 +9,7 @@
 | T2-05 | No existía una barrera automática contra incorporar los 30 KPI en el corpus de desarrollo. | Rechazo de coincidencias normalizadas antes de dividir y entrenar; test de rechazo sin crear ejecución. | Corregido para coincidencias exactas normalizadas; paráfrasis no cubiertas |
 | T2-06 | `process_and_save` sobrescribía salidas; el CLI de corpus no protegía un informe de calidad existente. | Comprobación previa de destinos y rutas distintas; regresión de preservación del sidecar. | Corregido |
 | T2-07 | Clasificador limitado: piloto histórico 18/30; reglas exploratorias no detectan Odio en test. | Métricas nuevas separadas y advertencias preservadas. No se cambian reglas para memorizar el KPI. | Abierto, calidad predictiva |
-| T2-08 | ZIP anunciado no adjunto. | Procedimiento adicional compatible con el repositorio; no se afirma haber inspeccionado el ZIP. | Pendiente de recepción e integración |
+| T2-08 | Paquete recibido después de la primera publicación. Sus comandos no incluían el modo de entrenamiento; fechas sin validar y escritura antes de comprobar manifiesto. | Script y plantilla integrados; prevalidación de destinos, fechas, particiones y KPI; instrucciones actualizadas sin eludir HU-03. | Corregido; pruebas en `test_paquete_t2.py` |
 | T2-09 | XLM-RoBERTa no está disponible en la caché local inspeccionada. | Prueba de ajuste/guardado/carga diminuta ejecutada en suite; entrenamiento exploratorio limitado a reglas y clásicos. No se descargó ni entrenó el checkpoint completo en esta entrega. | Comparación multilingüe pendiente |
 
 ## Seguridad y riesgos

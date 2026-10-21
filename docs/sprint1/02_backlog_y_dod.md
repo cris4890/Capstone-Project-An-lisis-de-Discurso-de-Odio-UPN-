@@ -17,7 +17,7 @@ inferior conserva el registro histórico. Estado actual y evidencias: [T2](../t2
 
 | Historia S3 | Prioridad | Resultado esperado | Estado |
 |---|---|---|---|
-| HU-01 | Alta | Preparar corpus sintético permitido para T2 y documentar procedencia; Reddit autorizado para futuro paper. | Parcial: exportación y validación disponibles; revisión humana y ZIP anunciado pendientes. |
+| HU-01 | Alta | Preparar corpus sintético permitido para T2 y documentar procedencia; Reddit autorizado para futuro paper. | Parcial: exportación y validación disponibles; ZIP integrado; revisión humana pendiente. |
 | HU-02 | Alta | Minimizar datos e identificarlos internamente. | Implementación local comprobable; revisión humana de privacidad pendiente. |
 | HU-03 | Alta | Manual y anotación independiente. | Herramientas implementadas; revisión del corpus T2 pendiente. |
 | HU-04 | Alta | Comparar reglas, clásicos y Transformer. | Parcial: entrenamiento clásico exploratorio; comparación con XLM-RoBERTa pendiente. |

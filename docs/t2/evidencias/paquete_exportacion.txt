@@ -1,0 +1,13 @@
+2026-10-21 15:46:57 [INFO] DataPipeline: Generados 72 registros sint�ticos biling�es exitosamente.
+{
+  "estado": "hoja_de_revision_generada",
+  "registros": 72,
+  "etiquetas_propuestas": {
+    "Odio": 24,
+    "Ofensivo": 24,
+    "Neutro": 24
+  },
+  "archivo": "private\\t2_revision_paquete_v1.csv",
+  "sha256": "d90efb054f2dba597684ac6758b009d28a7bcdfa4b3e01f9eaacff5d7a7bc1b7",
+  "advertencia": "Autor�a y revisi�n PENDIENTES; NO es corpus validado"
+}

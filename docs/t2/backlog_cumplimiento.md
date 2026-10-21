@@ -9,7 +9,7 @@ No se impone recolección de Reddit real a T2. No consta aceptación formal de e
 
 | Historia | Criterios de aceptación para T2 | Estado y evidencia | Pendiente |
 |---|---|---|---|
-| HU-01 Datos permitidos y procedencia | Exportar los 72 existentes, distinguir origen sintético y propuestas, validar estructura y conservar revisión pendiente. | Parcial: `synthetic_corpus.py`, `corpus_72/procedencia.json`, nuevas pruebas. | Recibir e integrar ZIP anunciado; revisión humana y confirmación de autoría cuando corresponda. No falta un recolector de Reddit para T2. |
+| HU-01 Datos permitidos y procedencia | Exportar los 72 existentes, distinguir origen sintético y propuestas, validar estructura y conservar revisión pendiente. | Parcial: `synthetic_corpus.py`, `corpus_72/procedencia.json`, nuevas pruebas. | ZIP integrado; pendiente revisión humana y confirmación de autoría cuando corresponda. No falta un recolector de Reddit para T2. |
 | HU-02 Minimización e identificación | Enmascarar identificadores, excluir originales, detectar duplicados y mantener IDs reproducibles del corpus sintético. | Implementación local comprobada; pruebas de limpieza, duplicados, IDs y persistencia. | Revisión humana del contenido antes de declararlo corpus revisado. No equivale a anonimato universal. |
 | HU-03 Manual, anotación y adjudicación | Dos anotaciones por unidad, motivo obligatorio, objetivo en Odio, tercero para desacuerdos, exportación bloqueada si incompleta. | Funciones implementadas y probadas con fixtures. Historia parcial como entrega del corpus T2. | Ejecutar la revisión real de los 72; no reutilizar adjudicaciones de otro corpus ni completar registros artificialmente. |
 | HU-04 Comparación de modelos | Train/validation/test sin hilos ni duplicados compartidos; seleccionar en validación; entrenar, persistir y cargar reglas, clásicos y Transformer. | Parcial: ejecución real con reglas, logística y SVM; prueba local diminuta del Transformer. | Ejecutar comparación con XLM-RoBERTa sobre el corpus T2. No se eliminó ese criterio sin autorización. |
@@ -43,7 +43,7 @@ Ninguna historia se declara formalmente aceptada por el profesor a partir de pyt
 
 ## Condiciones para acreditar el 100 %
 
-No se declara 100 %. Falta integrar el ZIP anunciado, completar la revisión humana
+No se declara 100 %. El ZIP está integrado; falta completar la revisión humana
 del corpus y ejecutar el componente Transformer exigido por HU-04, además de la
 aceptación efectiva del alcance. Si el profesor reduce explícitamente HU-04 a modelos
 clásicos para T2, debe registrarse esa decisión; no se presume.

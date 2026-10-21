@@ -14,9 +14,9 @@ Los 72 ejemplos ya existentes se exportan para revisión. Que el software valide
 no significa que sus etiquetas hayan sido revisadas. El piloto KPI histórico de 30 casos
 permanece separado y conserva sus 18 aciertos, 12 errores y 60 % de exactitud.
 
-El ZIP anunciado con `preparar_corpus_t2.py`, instrucciones y plantilla **no se ha recibido**.
-No se atribuye al ZIP el código implementado aquí. `synthetic_corpus.py` añade un procedimiento
-compatible con las herramientas actuales; falta contrastarlo e integrar el ZIP cuando se aporte.
+El ZIP recibido se integró en `preparar_corpus_t2.py`, con su plantilla y correcciones
+de fechas, protección de archivos y exclusión KPI. Véase [el procedimiento actualizado](PAQUETE_T2.md).
+`synthetic_corpus.py` conserva la exportación minimizada y la validación común.
 
 ## Preparar y revisar
 

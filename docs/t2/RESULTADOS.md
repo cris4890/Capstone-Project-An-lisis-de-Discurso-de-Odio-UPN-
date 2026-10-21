@@ -1,9 +1,10 @@
 # HateDetect: verificación del alcance T2
 
-Fecha de ejecución: 21 de octubre de 2026. Base: `ba51992062c1d5176e614cf401c719f5ab6b8692`, rama `codex/t2-corpus-sintetico`. Resultados locales anteriores al commit; las evidencias conservan ese estado real.
+Fecha de ejecución: 21 de octubre de 2026. Base: `ba51992062c1d5176e614cf401c719f5ab6b8692`, rama `codex/t2-corpus-sintetico`. Resultados locales anteriores al commit correspondiente; las evidencias conservan ese estado real. [Pull Request #2](https://github.com/cris4890/Capstone-Project-An-lisis-de-Discurso-de-Odio-UPN-/pull/2), sin fusionar.
 
 ## Cambios entregados
 
+- `preparar_corpus_t2.py`, `tests/test_paquete_t2.py`, plantilla y `PAQUETE_T2.md`: integración del ZIP recibido, fechas válidas, prevalidación de destinos, exclusión KPI y compatibilidad con el entrenamiento y HU-03. Exportación real en `private/t2_revision_paquete_v1.csv`, pendiente y excluida de Git.
 - `synthetic_corpus.py`: exportación de 72 comentarios, plantilla sin revisión inventada, procedencia y hashes; validación y exclusión de los 30 casos KPI por texto normalizado.
 - `corpus.py`: identificadores sintéticos estables, detección de etiquetas contradictorias y validación estricta de campos, idioma, origen, etiquetas y duplicados.
 - `data_pipeline.py`: protección contra sobrescritura de corpus y evidencias.
@@ -21,12 +22,14 @@ Fecha de ejecución: 21 de octubre de 2026. Base: `ba51992062c1d5176e614cf401c71
 | Nuevas pruebas iniciales | 25 aprobadas, 18,21 s | `pruebas_corpus.xml`, `.txt` |
 | Primera regresión completa | 130 aprobadas, 26,96 s | `pruebas_final.xml`, `.txt` |
 | Ruta positiva de entrenamiento revisado, aislada | 1 aprobada, 9,94 s; incluida después en regresión | salida de ejecución y caso correspondiente en XML final |
-| Versión final local | **131 aprobadas, 0 fallidas, 0 omitidas; 29,65 s** | `pruebas_version_131.xml`, `.txt` |
+| Versión anterior al ZIP | 131 aprobadas, 29,65 s | `pruebas_version_131.xml`, `.txt` |
+| Integración del ZIP | 11 aprobadas, 11,34 s | `paquete_zip_pruebas.xml`, `.txt` |
+| Versión final con ZIP | **142 aprobadas, 0 fallidas, 0 omitidas; 34,51 s** | `pruebas_version_142.xml`, `.txt` |
 | Laboratorio inicial | 10 aprobadas | `laboratorio/resumen.json` |
 | Fallo deliberado en copia temporal | 9 aprobadas y 1 fallo esperado | `laboratorio/resumen.json` |
 | Laboratorio restaurado | 10 aprobadas; fuentes originales intactas | `laboratorio/resumen.json` |
 
-El inventario final contiene **96 unitarias, 27 de integración y 8 de sistema** en [inventario_pruebas_131.csv](evidencias/inventario_pruebas_131.csv). Las pruebas de sistema usan Streamlit AppTest, no un navegador real. La aceptación humana formal no se sustituye por pytest. Las identidades FIXTURE de los tests son datos simulados temporales, no revisión del equipo.
+El inventario final contiene **96 unitarias, 38 de integración y 8 de sistema** en [inventario_pruebas_142.csv](evidencias/inventario_pruebas_142.csv). Las pruebas de sistema usan Streamlit AppTest, no un navegador real. La aceptación humana formal no se sustituye por pytest. Las identidades FIXTURE de los tests son datos simulados temporales, no revisión del equipo.
 
 Se comprobaron clasificación y carga de modelos, reportes, navegación, guardado voluntario, búsqueda y filtros del historial, anotación y adjudicación, persistencia, partición, entrenamiento clásico, circuito Transformer diminuto local, respaldo/restauración e integridad y configuración local. Los detalles requisito → prueba → resultado están en [la matriz](backlog_cumplimiento.md).
 
@@ -50,7 +53,7 @@ No se entrenó XLM-RoBERTa completo: no estaba disponible su checkpoint local. E
 
 Se conservaron HU-01 a HU-06, sin historias duplicadas. HU-02, HU-05 y HU-06 tienen implementación local comprobada dentro del alcance descrito; aceptación formal pendiente. HU-01 y HU-03 son parciales por la revisión humana de los 72 casos. HU-04 es parcial por la comparación Transformer pendiente. Véanse criterios individuales y evidencias en el backlog actualizado.
 
-**No se acredita el 100 % de T2**: falta recibir e integrar el ZIP anunciado, revisar humanamente el corpus, completar la comparación exigida por HU-04 o registrar una modificación aprobada de ese alcance, y realizar la aceptación formal. La autorización para datos sintéticos se registra como comunicación del solicitante; no se inventó un acta del profesor. Reddit no bloquea T2 según esa autorización; permanece como requisito metodológico del futuro paper.
+**No se acredita el 100 % de T2**: falta revisar humanamente el corpus, completar la comparación exigida por HU-04 o registrar una modificación aprobada de ese alcance, y realizar la aceptación formal. La autorización para datos sintéticos se registra como comunicación del solicitante; no se inventó un acta del profesor. Reddit no bloquea T2 según esa autorización; permanece como requisito metodológico del futuro paper.
 
 Seguridad verificada solo en entorno local: minimización, guardado voluntario, escucha local, XSRF/CORS, respaldo y restauración. Autenticación de personas, cifrado productivo y respaldo externo no se declaran implementados.
 
