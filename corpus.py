@@ -17,6 +17,46 @@ SAFE_COLUMNS = ["id_comentario", "id_hilo", "subreddit", "idioma", "tipo_conteni
                 "revision_idioma", "grupo_objetivo", "justificacion"]
 
 
+def text_identity(text):
+    """Clave conservadora contra duplicados; no elimina negaciones ni contexto."""
+    return clean_and_anonymize(text).casefold()
+
+
+def validate_prepared_corpus(frame, require_labels=True):
+    """Validación estricta sin eliminar filas ni cambiar IDs de una versión anotada."""
+    required = {"id_comentario", "id_hilo", "texto_limpio", "subreddit", "idioma",
+                "tipo_contenido", "origen"}
+    if require_labels:
+        required.add("etiqueta")
+    missing = required - set(frame)
+    if missing or frame.empty:
+        raise ValueError("Corpus vacío o faltan campos requeridos: " + ", ".join(sorted(missing)))
+    values = frame[list(required)]
+    if values.isna().any().any() or values.astype(str).apply(lambda c: c.str.strip()).eq("").any().any():
+        raise ValueError("Hay campos requeridos vacíos.")
+    if frame.id_comentario.duplicated().any():
+        raise ValueError("Identificadores duplicados.")
+    keys = frame.texto_limpio.map(text_identity)
+    if keys.eq("").any() or keys.duplicated().any():
+        raise ValueError("Textos vacíos o duplicados después de normalización.")
+    if frame.origen.nunique() != 1 or not set(frame.origen).issubset({"sintetico", "reddit_autorizado", "licenciado"}):
+        raise ValueError("Declare una única procedencia reconocida.")
+    for col, permitted in {"subreddit": {"r/Millennials", "r/GenZ"},
+                           "idioma": {"es", "en"},
+                           "tipo_contenido": {"publicacion", "comentario"}}.items():
+        if not set(frame[col]).issubset(permitted):
+            raise ValueError(f"Valores inválidos en {col}.")
+    if "etiqueta" in frame:
+        permitted = CLASSES if require_labels else CLASSES + [""]
+        if not frame.etiqueta.fillna("").isin(permitted).all():
+            raise ValueError("Etiquetas fuera del esquema Odio/Ofensivo/Neutro.")
+    if "revision_idioma" in frame:
+        flags = frame.revision_idioma.astype(str).str.strip().str.lower()
+        if not flags.isin(["false", "0"]).all():
+            raise ValueError("Resuelva la revisión de idioma; indicador inválido o pendiente.")
+    return frame
+
+
 def language_of(text):
     DetectorFactory.seed = 42
     try:
@@ -69,7 +109,11 @@ def prepare_corpus(df, manifest=None):
     df = df[~df[text_col].fillna("").astype(str).str.strip().str.lower().isin(["", "[deleted]", "[removed]"])]
     df["texto_limpio"] = df[text_col].apply(clean_and_anonymize)
     analyzable = df.texto_limpio.str.replace(r"\[(?:USER|URL|EMAIL|PHONE)\]", "", regex=True).str.contains(r"[^\W\d_]", regex=True)
-    df = df[analyzable].drop_duplicates("texto_limpio").copy()
+    df = df[analyzable].copy()
+    df["_text_identity"] = df.texto_limpio.map(text_identity)
+    if "etiqueta" in df and df.groupby("_text_identity").etiqueta.nunique().gt(1).any():
+        raise ValueError("Textos duplicados con etiquetas contradictorias; requieren revisión.")
+    df = df.drop_duplicates("_text_identity").copy()
     if df.empty:
         raise ValueError("No quedaron textos analizables.")
     if real:
@@ -87,9 +131,9 @@ def prepare_corpus(df, manifest=None):
     if not real:
         df["idioma"] = provided
         df["revision_idioma"] = ~provided.isin(["es", "en"])
-    thread_map = {value: str(uuid.uuid4()) for value in df.id_hilo.unique()}
+    thread_map = {value: str(uuid.uuid4() if real else uuid.uuid5(uuid.NAMESPACE_URL, "hatedetect:synthetic:thread:" + str(value))) for value in df.id_hilo.unique()}
     df["id_hilo"] = df.id_hilo.map(thread_map)
-    df["id_comentario"] = [str(uuid.uuid4()) for _ in range(len(df))]
+    df["id_comentario"] = [str(uuid.uuid4() if real else uuid.uuid5(uuid.NAMESPACE_URL, "hatedetect:synthetic:text:" + key)) for key in df._text_identity]
     if "etiqueta" not in df:
         df["etiqueta"] = ""
     if not df.etiqueta.fillna("").isin(CLASSES + [""]).all():
@@ -114,7 +158,7 @@ def main():
     manifest = json.loads(Path(args.manifest).read_text(encoding="utf-8")) if args.manifest else None
     df, report = prepare_corpus(pd.read_csv(args.input), manifest)
     output = Path(args.output)
-    if output.exists():
+    if output.exists() or output.with_suffix(".quality.json").exists():
         raise FileExistsError("Use una ruta nueva para conservar la versión anterior.")
     output.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(output, index=False)

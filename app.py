@@ -123,6 +123,11 @@ with st.sidebar.expander("Acerca del proyecto"):
     st.caption("El enmascaramiento automático requiere revisión humana. La comunidad no demuestra la edad de sus participantes.")
 if menu != "Historial" and (report is None or report["origin"] == "sintetico"):
     st.caption("● DATOS SINTÉTICOS · Demostración académica; no representa la prevalencia del odio en Reddit.")
+    if report:
+        review_status = report.get("quality", {}).get("review_status", "no documentada en esta ejecución histórica")
+        st.caption(f"Revisión del corpus: {review_status}.")
+        if report.get("evaluation_scope") == "demostracion_tecnica_exploratoria":
+            st.info("Ejecución exploratoria con etiquetas propuestas. No acredita revisión humana del corpus ni validación científica.")
 elif menu != "Historial":
     st.info("Corpus declarado de origen real. Consulte su autorización y límites de muestreo antes de interpretar resultados.")
 

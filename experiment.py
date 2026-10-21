@@ -1,6 +1,7 @@
 """Particiones por hilo y evaluación reproducible sin selección sobre prueba."""
 import numpy as np
 import pandas as pd
+from corpus import text_identity
 from sklearn.model_selection import GroupShuffleSplit
 from sklearn.metrics import (accuracy_score, balanced_accuracy_score, confusion_matrix,
                              precision_recall_fscore_support, f1_score)
@@ -20,7 +21,7 @@ def split_corpus(df, seed=42):
         raise ValueError("El corpus debe contener solamente español e inglés revisados.")
     if set(df.etiqueta) != set(CLASSES):
         raise ValueError("Se requieren las tres clases anotadas.")
-    if df.texto_limpio.duplicated().any():
+    if df.texto_limpio.map(text_identity).duplicated().any():
         raise ValueError("Elimine textos duplicados antes de separar por hilo.")
     if "revision_idioma" in df and df.revision_idioma.astype(str).str.lower().isin(["true", "1"]).any():
         raise ValueError("Resuelva la revisión de idioma antes de entrenar.")

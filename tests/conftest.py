@@ -21,7 +21,10 @@ def pytest_collection_modifyitems(items):
     for item in items:
         file = item.path.name
         name = item.originalname or item.name
-        if file == "test_functional_journey.py" or name in system_names:
+        explicit = [kind for kind in ["unitaria", "integracion", "sistema", "aceptacion"] if item.get_closest_marker(kind)]
+        if explicit:
+            kind = explicit[0]
+        elif file == "test_functional_journey.py" or name in system_names:
             kind = "sistema"
         elif file in {"test_annotation_report.py", "test_pilot_corpus.py"}:
             kind = "integracion"

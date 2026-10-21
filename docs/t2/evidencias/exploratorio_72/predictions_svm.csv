@@ -1,0 +1,12 @@
+id_comentario,id_hilo,subreddit,idioma,tipo_contenido,etiqueta,prediction,correct
+bf64d3bf-2512-5c8a-a2c9-99565b733bf2,5925a960-d8ed-5a7e-96e9-338c101acf14,r/Millennials,es,comentario,Ofensivo,Ofensivo,True
+5f1d91c9-f800-5710-85b9-7fbed08f4afe,91127e02-42f0-5ba7-a553-05a8c1f96ead,r/Millennials,es,comentario,Neutro,Ofensivo,False
+e1a679cb-5997-532e-a956-04be84ece3be,1305bd90-6520-5de8-a709-c7627f012b19,r/Millennials,en,comentario,Odio,Neutro,False
+79eae5aa-1eb0-53f0-86a3-cdbc14335faf,ca290175-09e7-5375-8ba9-d53898fa0689,r/Millennials,en,comentario,Odio,Odio,True
+765833b1-0797-5a37-b617-aaacaef77327,15145039-df8a-5ab3-9de2-4368c13065c4,r/Millennials,en,comentario,Ofensivo,Ofensivo,True
+04733a46-380f-5d20-821f-450c3f0a4a7b,46a38541-48a9-51e7-97eb-71d2c0390901,r/Millennials,en,comentario,Ofensivo,Ofensivo,True
+4fbfefd4-3013-544a-aa4e-1f64fd29f5f0,42dfe2f6-71fd-560b-af87-c3d7f67f13ec,r/GenZ,es,comentario,Odio,Odio,True
+6adfde46-d67c-500e-bdee-530e70f625c1,cc0d5175-f99e-558f-9060-ac14ce31e54a,r/GenZ,es,comentario,Odio,Odio,True
+6ea98855-5d03-5ce3-8f40-4db5e5b64365,c7e9905a-3266-5d3f-a808-7b385d211a09,r/GenZ,es,comentario,Neutro,Odio,False
+04d6cc05-33e0-5e52-a0b9-232971da0b6f,fd0c307d-7e93-5170-a1cb-8f31fd30cc0d,r/GenZ,en,comentario,Ofensivo,Neutro,False
+b549ac38-2b8a-5eb2-8d1e-0cb2a9bf99ff,11b62cf6-e3fe-5af8-9afd-d4ce34c727d6,r/GenZ,en,comentario,Neutro,Ofensivo,False

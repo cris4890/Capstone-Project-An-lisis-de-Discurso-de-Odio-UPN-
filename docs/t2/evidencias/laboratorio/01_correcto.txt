@@ -1,0 +1,20 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.14, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\user\Desktop\Capstone-Project-An-lisis-de-Discurso-de-Odio-UPN-\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\user\AppData\Local\Temp\hatedetect_lab_w5dswndz
+plugins: anyio-4.15.1
+collecting ... collected 10 items
+
+tests/test_laboratorio_unitarias.py::test_p01_normaliza_espacios PASSED  [ 10%]
+tests/test_laboratorio_unitarias.py::test_p02_oculta_correo PASSED       [ 20%]
+tests/test_laboratorio_unitarias.py::test_p03_oculta_telefono PASSED     [ 30%]
+tests/test_laboratorio_unitarias.py::test_p04_entrada_numerica PASSED    [ 40%]
+tests/test_laboratorio_unitarias.py::test_p05_clasifica_insulto PASSED   [ 50%]
+tests/test_laboratorio_unitarias.py::test_p06_cuenta_categorias PASSED   [ 60%]
+tests/test_laboratorio_unitarias.py::test_p07_porcentaje_odio PASSED     [ 70%]
+tests/test_laboratorio_unitarias.py::test_p08_etiqueta_invalida PASSED   [ 80%]
+tests/test_laboratorio_unitarias.py::test_p09_precision_odio PASSED      [ 90%]
+tests/test_laboratorio_unitarias.py::test_p10_tiempo_promedio PASSED     [100%]
+
+- generated xml file: C:\Users\user\Desktop\Capstone-Project-An-lisis-de-Discurso-de-Odio-UPN-\docs\t2\evidencias\laboratorio\01_correcto.xml -
+============================= 10 passed in 6.85s ==============================

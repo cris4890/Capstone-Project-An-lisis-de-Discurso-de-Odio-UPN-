@@ -24,7 +24,8 @@ from sklearn.svm import LinearSVC
 from sklearn.pipeline import make_pipeline
 from sklearn.metrics import f1_score, ConfusionMatrixDisplay
 
-from corpus import prepare_corpus, validate_manifest
+from corpus import prepare_corpus, validate_manifest, validate_prepared_corpus
+from synthetic_corpus import reject_kpi_overlap
 from data_pipeline import generate_synthetic_data
 from experiment import CLASSES, split_corpus, select_model, metrics_for, bootstrap_intervals, subgroup_metrics
 from model_classes import RuleBasedClassifier, TransformerClassifier
@@ -38,7 +39,8 @@ def write_json(path, value):
 
 
 def run_training_pipeline(data_path=None, output=None, include_transformer=False,
-                          epochs=3, bootstrap_samples=500, manifest_path=None, annotation_db=None):
+                          epochs=3, bootstrap_samples=500, manifest_path=None, annotation_db=None,
+                          synthetic_mode=None):
     seed = 42
     random.seed(seed)
     np.random.seed(seed)
@@ -47,21 +49,26 @@ def run_training_pipeline(data_path=None, output=None, include_transformer=False
         torch.cuda.manual_seed_all(seed)
     if epochs < 1 or bootstrap_samples < 1:
         raise ValueError("Épocas y remuestreos deben ser positivos.")
+    if synthetic_mode not in {None, "exploratory", "reviewed"}:
+        raise ValueError("Modo sintético inválido.")
     out = Path(output) if output else ROOT / "runs" / datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
     if out.exists():
         raise FileExistsError("La ejecución ya existe; elija una carpeta nueva.")
     if data_path is None:
+        if synthetic_mode == "reviewed":
+            raise ValueError("El modo revisado requiere --data y --annotation-db del corpus exacto.")
         frame, quality = prepare_corpus(generate_synthetic_data())
         source_hash = None
+        synthetic_mode = "exploratory"
     else:
         data_path = Path(data_path)
-        frame = pd.read_csv(data_path)
+        frame = pd.read_csv(data_path, dtype={"id_comentario": str, "id_hilo": str})
         source_hash = hashlib.sha256(data_path.read_bytes()).hexdigest()
-        if "origen" not in frame or frame.origen.isna().any() or frame.origen.nunique() != 1 or not set(frame.origen).issubset({"sintetico", "reddit_autorizado", "licenciado"}):
+        if frame.empty or "origen" not in frame or frame.origen.isna().any() or frame.origen.nunique() != 1 or not set(frame.origen).issubset({"sintetico", "reddit_autorizado", "licenciado"}):
             raise ValueError("Declare una única procedencia para el corpus.")
         quality = {"origin": frame.origen.iloc[0]}
         if frame.origen.iloc[0] != "sintetico":
-            if not manifest_path or not annotation_db:
+            if not manifest_path or not annotation_db or not Path(annotation_db).is_file():
                 raise ValueError("Datos reales requieren --manifest y --annotation-db.")
             manifest = json.loads(Path(manifest_path).read_text(encoding="utf-8"))
             quality["authorization_evidence_sha256"] = validate_manifest(manifest)
@@ -72,6 +79,15 @@ def run_training_pipeline(data_path=None, output=None, include_transformer=False
                 raise ValueError("El corpus contiene fechas fuera del periodo autorizado.")
             from annotations import AnnotationStore
             frame = AnnotationStore(annotation_db).export(source_hash, frame)
+        else:
+            if synthetic_mode not in {"exploratory", "reviewed"}:
+                raise ValueError("Corpus sintético: declare --synthetic-mode exploratory o reviewed.")
+            if synthetic_mode == "reviewed":
+                if not annotation_db or not Path(annotation_db).is_file():
+                    raise ValueError("El modo revisado requiere una base existente con dos anotaciones y adjudicación resuelta.")
+                from annotations import AnnotationStore
+                frame = AnnotationStore(annotation_db).export(source_hash, frame)
+                quality["annotation_database_sha256"] = hashlib.sha256(Path(annotation_db).read_bytes()).hexdigest()
     # Exportar solo columnas analíticas; nunca copiar originales a las ejecuciones.
     from corpus import SAFE_COLUMNS
     frame = frame[[c for c in SAFE_COLUMNS if c in frame]].copy()
@@ -79,6 +95,10 @@ def run_training_pipeline(data_path=None, output=None, include_transformer=False
     for column in ["texto_limpio", "justificacion", "grupo_objetivo"]:
         if column in frame:
             frame[column] = frame[column].apply(clean_and_anonymize)
+    validate_prepared_corpus(frame)
+    quality["kpi_isolation"] = reject_kpi_overlap(frame)
+    quality["review_status"] = ("anotaciones_registradas_identidad_no_autenticada" if annotation_db and
+        (frame.origen.iloc[0] != "sintetico" or synthetic_mode == "reviewed") else "pendiente")
     splits = split_corpus(frame, seed)
     out.mkdir(parents=True)
     frame.to_csv(out / "corpus.csv", index=False)
@@ -167,13 +187,15 @@ def run_training_pipeline(data_path=None, output=None, include_transformer=False
     source_files = {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in ROOT.glob("*.py")}
     report = {"schema_version": 2, "created_at": datetime.now(timezone.utc).isoformat(),
               "origin": frame.origen.iloc[0], "quality": quality, "source_sha256": source_hash,
+              "evaluation_scope": "demostracion_tecnica_exploratoria" if synthetic_mode == "exploratory" else "evaluacion_local",
               "corpus_sha256": hashlib.sha256((out/"corpus.csv").read_bytes()).hexdigest(),
               "seed": seed, "git_commit": commit, "git_dirty": bool(dirty), "source_sha256_by_file": source_files,
               "python": platform.python_version(), "platform": platform.platform(),
               "split_sizes": {k: len(v) for k,v in splits.items()}, "test_partition_size": len(test),
               "selection_criterion": "validation_macro_f1", "selected_model": selected,
               "transformer_included": include_transformer, "models": entries, "results": results,
-              "limitations": ["Corpus sintético: no estima prevalencia en Reddit." if frame.origen.iloc[0] == "sintetico" else "Revisar representatividad del muestreo.",
+              "limitations": ["Revisión de etiquetas: " + quality["review_status"],
+                              "Corpus sintético: no estima prevalencia en Reddit." if frame.origen.iloc[0] == "sintetico" else "Revisar representatividad del muestreo.",
                               "Probabilidades no calibradas; requieren revisión humana.",
                               "Los intervalos son exploratorios con muestras pequeñas."]}
     write_json(out / "run.json", report)
@@ -191,5 +213,6 @@ if __name__ == "__main__":
     parser.add_argument("--bootstrap", type=int, default=500)
     parser.add_argument("--manifest")
     parser.add_argument("--annotation-db")
+    parser.add_argument("--synthetic-mode", choices=["exploratory", "reviewed"])
     args = parser.parse_args()
-    run_training_pipeline(args.data, args.output, args.include_transformer, args.epochs, args.bootstrap, args.manifest, args.annotation_db)
+    run_training_pipeline(args.data, args.output, args.include_transformer, args.epochs, args.bootstrap, args.manifest, args.annotation_db, args.synthetic_mode)

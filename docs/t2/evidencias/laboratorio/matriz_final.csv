@@ -1,0 +1,11 @@
+﻿caso,entrada,esperado,observado,estado,segundos
+PU01,'  Hola   mundo  ',Hola mundo,Hola mundo,PASÓ,0.001
+PU02,Escribe a persona@example.com,Escribe a [EMAIL],Escribe a [EMAIL],PASÓ,0.001
+PU03,Llámame al +51 999 123 456,Llámame al [PHONE],Llámame al [PHONE],PASÓ,0.001
+PU04,12345,'','',PASÓ,0.001
+PU05,Eres un idiota.,Ofensivo,Ofensivo,PASÓ,0.003
+PU06,"['Odio', 'Neutro', 'Ofensivo', 'Odio']","{'Odio': 2, 'Ofensivo': 1, 'Neutro': 1}","{'Odio': 2, 'Ofensivo': 1, 'Neutro': 1}",PASÓ,0.001
+PU07,Odio=3; total=10,30 %,30 %,PASÓ,0.001
+PU08,Violento,ValueError: Etiqueta inválida,ValueError: Etiqueta inválida,PASÓ,0.001
+PU09,VP=6; FP=2,75 %,75 %,PASÓ,0.001
+PU10,0.20; 0.30; 0.40 segundos,0.30 segundos,0.30 segundos,PASÓ,0.001

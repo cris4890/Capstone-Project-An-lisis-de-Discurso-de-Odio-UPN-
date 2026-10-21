@@ -1,0 +1,25 @@
+language,category,text,expected,prediction,correct
+es,identidad_neutral,Apoyo a los inmigrantes.,Neutro,Odio,False
+en,identidad_neutral,Muslim students are welcome here.,Neutro,Odio,False
+es,negacion,No debemos discriminar a los refugiados.,Neutro,Odio,False
+en,negacion,We should not hate refugees.,Neutro,Odio,False
+es,cita_denuncia,Decir que los inmigrantes son una plaga es racista.,Neutro,Odio,False
+en,cita_denuncia,Calling immigrants parasites is racist.,Neutro,Odio,False
+es,contraargumento,Los refugiados merecen respeto y apoyo.,Neutro,Odio,False
+en,contraargumento,Trans people deserve equal rights.,Neutro,Odio,False
+es,insulto,Eres un idiota.,Ofensivo,Ofensivo,True
+en,insulto,You are a stupid jerk.,Ofensivo,Ofensivo,True
+es,odio_explicito,Los inmigrantes son una plaga y deben ser expulsados.,Odio,Odio,True
+en,odio_explicito,Muslim refugees are parasites and should be expelled.,Odio,Odio,True
+es,amenaza,Hay que matar a todos los refugiados.,Odio,Odio,True
+en,amenaza,Kill all Muslim refugees.,Odio,Odio,True
+es,odio_implicito,No alquilo mi casa a personas de esa etnia.,Odio,Odio,True
+en,odio_implicito,People of that ethnicity are not allowed to rent here.,Odio,Odio,True
+es,ironia,"Claro, culpar a los inmigrantes de todo es muy inteligente.",Neutro,Odio,False
+en,ironia,"Sure, blaming immigrants for everything is so clever.",Neutro,Neutro,True
+es,reapropiacion,Soy queer y estoy orgulloso de mi identidad.,Neutro,Ofensivo,False
+en,reapropiacion,I am queer and proud of my identity.,Neutro,Neutro,True
+es,evasion,Los inmi grantes son una pl4ga que hay que expulsar.,Odio,Odio,True
+en,evasion,Musl1m refugees are p4rasites; expel them all.,Odio,Odio,True
+en,polisemia,I am studying cancer treatments.,Neutro,Odio,False
+es,neutral,Gracias por compartir tus consejos de estudio.,Neutro,Ofensivo,False
