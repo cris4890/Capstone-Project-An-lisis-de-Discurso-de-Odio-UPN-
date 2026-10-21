@@ -1,0 +1,21 @@
+{
+  "manual": {
+    "total_segundos": 203.84,
+    "media_segundos": 6.794666666666667,
+    "aciertos": 28,
+    "exactitud": 0.9333333333333333,
+    "errores": 2,
+    "textos_por_minuto": 8.830455259026687,
+    "cobertura_60s": 0.26666666666666666
+  },
+  "hatedetect": {
+    "exactitud": 0.6,
+    "aciertos": 18,
+    "total_ventanas_segundos": 8.406700000006705,
+    "media_e2e_segundos": 0.2802233333335568,
+    "capacidad_ventanas_textos_minuto": 214.11493213729102,
+    "cobertura_ventanas_60s": 1.0
+  },
+  "comparacion_causal_valida": false,
+  "limitacion": "El E2E excluye ingreso y revisión humana; no equivale al protocolo manual. No afirmar ahorro laboral ni productividad integral."
+}

@@ -1,0 +1,186 @@
+{
+  "modelo": "ContextRuleBasedClassifier 2.0",
+  "alcance_tiempo": "Solo model.predict tras limpieza; una inferencia por texto, sin calentamiento; no incluye carga ni renderizado",
+  "resultados": [
+    {
+      "id": "T001",
+      "texto": "Mañana la reunión empieza a las nueve y revisaremos los resultados del proyecto.",
+      "categoria": "Neutro",
+      "segundos": 0.00013750000016443664
+    },
+    {
+      "id": "T002",
+      "texto": "Eres un inútil y no sabes hacer nada bien.",
+      "categoria": "Ofensivo",
+      "segundos": 0.00013569999964602175
+    },
+    {
+      "id": "T003",
+      "texto": "Los inmigrantes deberían ser expulsados del país solo por ser extranjeros.",
+      "categoria": "Neutro",
+      "segundos": 4.109999963475275e-05
+    },
+    {
+      "id": "T004",
+      "texto": "No todos los musulmanes piensan igual; juzgarlos por su religión es injusto.",
+      "categoria": "Neutro",
+      "segundos": 3.659999993033125e-05
+    },
+    {
+      "id": "T005",
+      "texto": "Cállate, idiota, tu comentario es una basura.",
+      "categoria": "Ofensivo",
+      "segundos": 2.8700000257231295e-05
+    },
+    {
+      "id": "T006",
+      "texto": "Las mujeres no deberían ocupar cargos importantes porque no sirven para liderar.",
+      "categoria": "Neutro",
+      "segundos": 3.5200000183976954e-05
+    },
+    {
+      "id": "T007",
+      "texto": "La comunidad debatió sobre videojuegos, trabajo y experiencias personales.",
+      "categoria": "Neutro",
+      "segundos": 3.5599999591795495e-05
+    },
+    {
+      "id": "T008",
+      "texto": "Ese tipo es un imbécil y me tiene harto.",
+      "categoria": "Ofensivo",
+      "segundos": 2.5099999675148865e-05
+    },
+    {
+      "id": "T009",
+      "texto": "Las personas homosexuales no deberían tener los mismos derechos que los demás.",
+      "categoria": "Neutro",
+      "segundos": 3.97000003431458e-05
+    },
+    {
+      "id": "T010",
+      "texto": "El artículo analiza diferencias lingüísticas entre español e inglés.",
+      "categoria": "Neutro",
+      "segundos": 2.5800000003073364e-05
+    },
+    {
+      "id": "T011",
+      "texto": "Qué comentario tan estúpido; aprende a leer antes de escribir.",
+      "categoria": "Ofensivo",
+      "segundos": 2.989999984492897e-05
+    },
+    {
+      "id": "T012",
+      "texto": "Los indígenas son inferiores y deberían mantenerse apartados.",
+      "categoria": "Neutro",
+      "segundos": 2.409999979136046e-05
+    },
+    {
+      "id": "T013",
+      "texto": "Estoy en desacuerdo con esa política, pero todos deben poder expresar su opinión.",
+      "categoria": "Neutro",
+      "segundos": 3.440000000409782e-05
+    },
+    {
+      "id": "T014",
+      "texto": "Vete al diablo, eres insoportable.",
+      "categoria": "Neutro",
+      "segundos": 1.6599999980826396e-05
+    },
+    {
+      "id": "T015",
+      "texto": "La gente de esa religión debería tener prohibido entrar a nuestra ciudad.",
+      "categoria": "Neutro",
+      "segundos": 3.3400000120309414e-05
+    },
+    {
+      "id": "T016",
+      "texto": "The report compares different machine learning models for text classification.",
+      "categoria": "Neutro",
+      "segundos": 2.7099999897473026e-05
+    },
+    {
+      "id": "T017",
+      "texto": "You're an idiot and your argument is garbage.",
+      "categoria": "Ofensivo",
+      "segundos": 2.3399999918183312e-05
+    },
+    {
+      "id": "T018",
+      "texto": "Immigrants should be banned from living here just because they are foreigners.",
+      "categoria": "Neutro",
+      "segundos": 3.190000006725313e-05
+    },
+    {
+      "id": "T019",
+      "texto": "Disagreeing with someone does not justify attacking their religion.",
+      "categoria": "Neutro",
+      "segundos": 2.4400000256719068e-05
+    },
+    {
+      "id": "T020",
+      "texto": "Shut up, moron; nobody wants to hear your nonsense.",
+      "categoria": "Ofensivo",
+      "segundos": 3.199999991920777e-05
+    },
+    {
+      "id": "T021",
+      "texto": "Women are not fit to lead and should stay out of management positions.",
+      "categoria": "Neutro",
+      "segundos": 6.349999966914766e-05
+    },
+    {
+      "id": "T022",
+      "texto": "The forum discussed music, college, jobs, and weekend plans.",
+      "categoria": "Neutro",
+      "segundos": 4.200000012133387e-05
+    },
+    {
+      "id": "T023",
+      "texto": "That guy is a pathetic loser.",
+      "categoria": "Ofensivo",
+      "segundos": 3.290000040578889e-05
+    },
+    {
+      "id": "T024",
+      "texto": "Gay people should not have the same rights as everyone else.",
+      "categoria": "Neutro",
+      "segundos": 4.4100000195612665e-05
+    },
+    {
+      "id": "T025",
+      "texto": "The study evaluates comments in both English and Spanish.",
+      "categoria": "Neutro",
+      "segundos": 3.370000013092067e-05
+    },
+    {
+      "id": "T026",
+      "texto": "Your post is stupid and you clearly have no idea what you're talking about.",
+      "categoria": "Ofensivo",
+      "segundos": 4.889999991064542e-05
+    },
+    {
+      "id": "T027",
+      "texto": "People of that ethnicity are inferior and should be kept separate.",
+      "categoria": "Neutro",
+      "segundos": 2.8899999961140566e-05
+    },
+    {
+      "id": "T028",
+      "texto": "I strongly disagree with the decision, but nobody should be threatened over it.",
+      "categoria": "Neutro",
+      "segundos": 3.9199999719130574e-05
+    },
+    {
+      "id": "T029",
+      "texto": "You're unbearable; get lost.",
+      "categoria": "Neutro",
+      "segundos": 1.8400000044493936e-05
+    },
+    {
+      "id": "T030",
+      "texto": "Followers of that religion should be forbidden from entering our neighborhood.",
+      "categoria": "Neutro",
+      "segundos": 2.790000007735216e-05
+    }
+  ]
+}
