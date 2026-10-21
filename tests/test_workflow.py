@@ -164,13 +164,14 @@ def test_streamlit_default_and_sections(tmp_path, monkeypatch):
         assert not app.exception
 
 
-def test_adjudication_overrides_initial_consensus(tmp_path):
+def test_consensus_cannot_be_adjudicated_or_overwritten(tmp_path):
     store = AnnotationStore(tmp_path/"a.sqlite3")
     for evaluator in ["A", "B"]:
         store.record("c", "u", evaluator, "Ofensivo", "", "Insulto")
-    store.adjudicate("c", "u", "C", "Neutro", "", "Cita para denunciar")
+    with pytest.raises(ValueError, match="desacuerdos"):
+        store.adjudicate("c", "u", "C", "Neutro", "", "Cita para denunciar")
     frame = pd.DataFrame({"id_comentario":["u"], "texto_limpio":["Texto"]})
-    assert store.export("c",frame).etiqueta.iloc[0] == "Neutro"
+    assert store.export("c",frame).etiqueta.iloc[0] == "Ofensivo"
 
 
 def test_language_review_blocks_training(corpus):

@@ -1,6 +1,6 @@
 # HateDetect: verificación del alcance T2
 
-Fecha de ejecución: 21 de octubre de 2026. Base: `ba51992062c1d5176e614cf401c719f5ab6b8692`, rama `codex/t2-corpus-sintetico`. Resultados locales anteriores al commit correspondiente; las evidencias conservan ese estado real. [Pull Request #2](https://github.com/cris4890/Capstone-Project-An-lisis-de-Discurso-de-Odio-UPN-/pull/2), sin fusionar.
+Fecha de actualización: 21 de octubre de 2026. `main` verificado en `f6fe5e7`, integración del [Pull Request #2](https://github.com/cris4890/Capstone-Project-An-lisis-de-Discurso-de-Odio-UPN-/pull/2). Su GitHub Actions posterior finalizó correctamente. Las cifras históricas siguientes pertenecen al PR #2 y no se reinterpretan como revisión humana.
 
 ## Cambios entregados
 
@@ -52,6 +52,18 @@ No se entrenó XLM-RoBERTa completo: no estaba disponible su checkpoint local. E
 ## Estado de las historias y pendientes
 
 Se conservaron HU-01 a HU-06, sin historias duplicadas. HU-02, HU-05 y HU-06 tienen implementación local comprobada dentro del alcance descrito; aceptación formal pendiente. HU-01 y HU-03 son parciales por la revisión humana de los 72 casos. HU-04 es parcial por la comparación Transformer pendiente. Véanse criterios individuales y evidencias en el backlog actualizado.
+
+La Fase 3 agrega controles probados para roles A/B/E3, reanudación y progreso por
+evaluador, desacuerdos exclusivos, consenso inmutable, Kappa previo y exportación
+condicionada. Esto mejora el flujo, pero no cambia el estado parcial de HU-01/HU-03:
+Jeanpierre y Erick aún deben revisar los 72 textos y Crisdel debe resolver los
+desacuerdos reales. La aceptación académica también continúa pendiente.
+
+Verificación local actualizada de la Fase 3: **151 pruebas aprobadas, 0 fallidas**
+en 36,13 s. El conteo incluye las 142 pruebas heredadas y 9 casos nuevos de roles,
+progreso, reanudación, independencia, normalización de objetivos, desacuerdos,
+concordancia y condiciones de exportación. No se modifica el inventario histórico
+de 142 pruebas del PR #2.
 
 **No se acredita el 100 % de T2**: falta revisar humanamente el corpus, completar la comparación exigida por HU-04 o registrar una modificación aprobada de ese alcance, y realizar la aceptación formal. La autorización para datos sintéticos se registra como comunicación del solicitante; no se inventó un acta del profesor. Reddit no bloquea T2 según esa autorización; permanece como requisito metodológico del futuro paper.
 
