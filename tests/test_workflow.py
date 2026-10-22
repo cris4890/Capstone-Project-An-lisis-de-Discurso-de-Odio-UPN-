@@ -238,7 +238,7 @@ def test_three_subsystems_and_optional_history(tmp_path, monkeypatch):
     assert app.dataframe[0].value.iloc[0]["Texto procesado"] == "Gracias [USER]"
     app.sidebar.radio[0].set_value("Reportes").run()
     assert not app.exception and len(HistoryStore(path).read()) == 1
-    assert [t.label for t in app.tabs] == ["Evaluación de modelos", "Exploración del corpus", "Anotación y acuerdo"]
+    assert [t.label for t in app.tabs] == ["Evaluación de modelos", "Exploración del corpus", "Anotación y acuerdo", "KPI del piloto"]
 
 
 def test_internal_annotation_separate():
