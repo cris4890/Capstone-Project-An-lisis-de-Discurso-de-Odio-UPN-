@@ -18,6 +18,7 @@ from model_classes import RuleBasedClassifier
 from context_rules import ContextRuleBasedClassifier
 from model_registry import load_run_model
 from annotation_report import render_annotation_report
+from kpi_report import render_kpi_report
 
 ROOT = Path(__file__).resolve().parent
 st.set_page_config(
@@ -191,7 +192,9 @@ if menu == "Clasificación":
 
 elif menu == "Reportes":
     st.title("Reportes")
-    evaluation_tab, corpus_tab, annotation_tab = st.tabs(["Evaluación de modelos", "Exploración del corpus", "Anotación y acuerdo"])
+    evaluation_tab, corpus_tab, annotation_tab, kpi_tab = st.tabs(["Evaluación de modelos", "Exploración del corpus", "Anotación y acuerdo", "KPI del piloto"])
+    with kpi_tab:
+        render_kpi_report(ROOT)
     with annotation_tab:
         render_annotation_report(ROOT)
     with evaluation_tab:
