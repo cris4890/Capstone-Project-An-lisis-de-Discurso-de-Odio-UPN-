@@ -42,6 +42,9 @@ class AnnotationStore:
             CREATE TABLE IF NOT EXISTS reviewer_roles (
                 corpus TEXT, role TEXT, evaluator TEXT, created TEXT,
                 PRIMARY KEY(corpus, role), UNIQUE(corpus, evaluator));
+            CREATE TABLE IF NOT EXISTS export_identities (
+                corpus TEXT, role TEXT, evaluator TEXT, pseudonym TEXT, created TEXT,
+                PRIMARY KEY(corpus, role), UNIQUE(corpus, pseudonym));
             CREATE TABLE IF NOT EXISTS package_imports (
                 corpus TEXT, role TEXT, evaluator_pseudonym TEXT, package_sha256 TEXT, imported TEXT,
                 PRIMARY KEY(corpus, role), UNIQUE(corpus, package_sha256));
@@ -229,7 +232,21 @@ class AnnotationStore:
             raise ValueError("La exportación exige una anotación del evaluador por cada uno de los 72 comentarios.")
         if own.unit.astype(str).duplicated().any():
             raise ValueError("La revisión contiene IDs duplicados.")
-        pseudonym = f"reviewer-{uuid.uuid4()}"
+        with self.connect() as conn:
+            identity = conn.execute(
+                "SELECT evaluator,pseudonym FROM export_identities WHERE corpus=? AND role=?",
+                (corpus, role),
+            ).fetchone()
+            if identity:
+                if identity[0] != evaluator:
+                    raise ValueError("La identidad de exportación no corresponde al evaluador registrado.")
+                pseudonym = identity[1]
+            else:
+                pseudonym = f"reviewer-{uuid.uuid4()}"
+                conn.execute(
+                    "INSERT INTO export_identities VALUES (?,?,?,?,?)",
+                    (corpus, role, evaluator, pseudonym, datetime.now(timezone.utc).isoformat()),
+                )
         indexed = own.assign(unit=own.unit.astype(str)).set_index("unit")
         records = []
         for unit in units:
@@ -263,13 +280,31 @@ class AnnotationStore:
                 raise ValueError("El paquete no contiene JSON válido.") from exc
         if not isinstance(package, dict) or set(package) != PACKAGE_TOP_LEVEL:
             raise ValueError("El paquete tiene una estructura no permitida.")
-        supplied_digest = str(package.get("package_sha256", ""))
+        string_fields = {
+            "schema": package["schema"],
+            "corpus_sha256": package["corpus_sha256"],
+            "role": package["role"],
+            "evaluator_pseudonym": package["evaluator_pseudonym"],
+            "exported_at": package["exported_at"],
+            "package_sha256": package["package_sha256"],
+        }
+        if any(type(value) is not str or not value.strip() for value in string_fields.values()):
+            raise ValueError("Los identificadores, hashes y fechas del paquete deben ser cadenas no vacías.")
+        if type(package["corpus_rows"]) is not int:
+            raise ValueError("La cantidad de filas del paquete debe ser un número entero.")
+        if not isinstance(package["annotations"], list):
+            raise ValueError("La colección de anotaciones debe ser una lista.")
+        supplied_digest = package["package_sha256"]
+        if not re.fullmatch(r"[0-9a-f]{64}", supplied_digest):
+            raise ValueError("El hash de integridad del paquete no es válido.")
         body = {key: value for key, value in package.items() if key != "package_sha256"}
         actual_digest = hashlib.sha256(cls._canonical_json(body)).hexdigest()
         if not hmac.compare_digest(supplied_digest, actual_digest):
             raise ValueError("El paquete está corrupto o fue modificado.")
         if package["schema"] != PACKAGE_SCHEMA:
             raise ValueError("La versión del paquete no es compatible.")
+        if not re.fullmatch(r"[0-9a-f]{64}", package["corpus_sha256"]):
+            raise ValueError("El hash del corpus no tiene un formato SHA-256 válido.")
         if package["corpus_sha256"] != corpus_hash:
             raise ValueError("El hash del corpus no coincide.")
         if package["corpus_rows"] != 72 or len(expected_units) != 72:
@@ -286,7 +321,7 @@ class AnnotationStore:
             raise ValueError("El identificador seudónimo no es válido.") from exc
         try:
             exported = datetime.fromisoformat(package["exported_at"])
-        except (ValueError, TypeError) as exc:
+        except ValueError as exc:
             raise ValueError("La fecha de exportación no es válida.") from exc
         if exported.tzinfo is None:
             raise ValueError("La fecha de exportación debe incluir zona horaria.")
@@ -297,16 +332,26 @@ class AnnotationStore:
         for record in records:
             if not isinstance(record, dict) or set(record) != PACKAGE_ANNOTATION_FIELDS:
                 raise ValueError("Una anotación tiene campos faltantes o no permitidos.")
-            unit = str(record["comment_id"])
+            if type(record["comment_id"]) is not str or not record["comment_id"].strip():
+                raise ValueError("El ID del comentario debe ser una cadena no vacía.")
+            if type(record["class"]) is not str:
+                raise ValueError("La clase debe ser una cadena de texto válida.")
+            if type(record["target_group"]) is not str:
+                raise ValueError("El grupo objetivo debe ser una cadena de texto.")
+            if type(record["justification"]) is not str or not record["justification"].strip():
+                raise ValueError("La justificación debe ser una cadena no vacía.")
+            if type(record["manual_version"]) is not str or not record["manual_version"].strip():
+                raise ValueError("La versión del manual debe ser una cadena no vacía.")
+            if type(record["annotated_at"]) is not str or not record["annotated_at"].strip():
+                raise ValueError("La fecha de anotación debe ser una cadena no vacía.")
+            unit = record["comment_id"]
             if unit in seen:
                 raise ValueError("El paquete contiene registros duplicados.")
             seen.add(unit)
             cls.validate(record["class"], record["target_group"], record["justification"])
-            if not str(record["manual_version"]).strip():
-                raise ValueError("La versión del manual es obligatoria.")
             try:
                 annotated = datetime.fromisoformat(record["annotated_at"])
-            except (ValueError, TypeError) as exc:
+            except ValueError as exc:
                 raise ValueError("Una fecha de anotación no es válida.") from exc
             if annotated.tzinfo is None:
                 raise ValueError("Las fechas de anotación deben incluir zona horaria.")

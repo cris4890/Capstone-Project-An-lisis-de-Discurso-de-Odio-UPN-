@@ -36,6 +36,8 @@ CSV y no puede sustituirse desde el panel.
    el paquete individual JSON. El paquete contiene el rol, un identificador
    seudónimo, el hash del corpus, IDs, etiquetas, grupos, justificaciones,
    versión del manual y fechas. No contiene el código privado ni los textos.
+   El seudónimo se genera aleatoriamente una sola vez, se guarda sólo en la base
+   local y se reutiliza para ese evaluador, rol y corpus; no se deriva del código.
 
 La concordancia, matriz y distribuciones de etiquetas permanecen ocultas para A
 y B mientras cualquiera tenga unidades pendientes. Se habilitan para ambos sólo

@@ -34,11 +34,14 @@ def resign(package):
     return package
 
 
-def test_individual_export_is_complete_and_private(tmp_path):
+def test_individual_export_is_complete_stable_and_private(tmp_path):
     store, package, frame, _, corpus_hash = completed_package(tmp_path, "A")
+    reopened = AnnotationStore(store.path)
+    again = reopened.export_individual(corpus_hash, "A", frame)
     assert package["role"] == "A"
     assert package["corpus_rows"] == 72 and len(package["annotations"]) == 72
     assert package["evaluator_pseudonym"].startswith("reviewer-")
+    assert package["evaluator_pseudonym"] == again["evaluator_pseudonym"]
     serialized = AnnotationStore.package_bytes(package).decode("utf-8")
     assert "FIXTURE-CODE-A" not in serialized
     assert "Texto fixture" not in serialized
@@ -117,6 +120,80 @@ def test_consolidation_rejects_duplicate_ids_wrong_role_and_hash_mismatch(tmp_pa
     changed_content = content + b"\n"
     with pytest.raises(ValueError, match="hash del corpus"):
         AnnotationStore.consolidate_packages(tmp_path / "hash.sqlite3", [package_a, package_b], changed_content, frame)
+
+
+def test_consolidation_rejects_non_string_annotation_fields_before_creating_db(tmp_path):
+    _, package_a, frame, content, _ = completed_package(tmp_path, "A")
+    _, package_b, _, _, _ = completed_package(tmp_path, "B")
+    invalid_values = [None, 7, True, [], {}]
+    text_fields = [
+        "comment_id", "class", "target_group", "justification", "manual_version", "annotated_at"
+    ]
+    case = 0
+    for field in text_fields:
+        for value in invalid_values:
+            changed = copy.deepcopy(package_a)
+            changed["annotations"][0][field] = value
+            resign(changed)
+            destination = tmp_path / f"invalid-record-{case}.sqlite3"
+            with pytest.raises(ValueError):
+                AnnotationStore.consolidate_packages(destination, [changed, package_b], content, frame)
+            assert not destination.exists()
+            case += 1
+
+
+def test_consolidation_rejects_empty_text_and_missing_hate_target_before_creating_db(tmp_path):
+    _, package_a, frame, content, _ = completed_package(tmp_path, "A")
+    _, package_b, _, _, _ = completed_package(tmp_path, "B")
+    cases = [
+        ("justification", "   "),
+        ("manual_version", ""),
+        ("comment_id", " "),
+        ("annotated_at", ""),
+    ]
+    for index, (field, value) in enumerate(cases):
+        changed = copy.deepcopy(package_a)
+        changed["annotations"][0][field] = value
+        resign(changed)
+        destination = tmp_path / f"empty-{index}.sqlite3"
+        with pytest.raises(ValueError):
+            AnnotationStore.consolidate_packages(destination, [changed, package_b], content, frame)
+        assert not destination.exists()
+    hate = copy.deepcopy(package_a)
+    hate["annotations"][0].update({"class": "Odio", "target_group": ""})
+    resign(hate)
+    destination = tmp_path / "hate-without-target.sqlite3"
+    with pytest.raises(ValueError, match="grupo"):
+        AnnotationStore.consolidate_packages(destination, [hate, package_b], content, frame)
+    assert not destination.exists()
+
+
+def test_consolidation_rejects_invalid_top_level_types_before_creating_db(tmp_path):
+    _, package_a, frame, content, _ = completed_package(tmp_path, "A")
+    _, package_b, _, _, _ = completed_package(tmp_path, "B")
+    cases = [
+        ("schema", None),
+        ("corpus_sha256", 7),
+        ("corpus_rows", True),
+        ("role", False),
+        ("evaluator_pseudonym", []),
+        ("exported_at", {}),
+        ("annotations", {}),
+    ]
+    for index, (field, value) in enumerate(cases):
+        changed = copy.deepcopy(package_a)
+        changed[field] = value
+        resign(changed)
+        destination = tmp_path / f"invalid-package-{index}.sqlite3"
+        with pytest.raises(ValueError):
+            AnnotationStore.consolidate_packages(destination, [changed, package_b], content, frame)
+        assert not destination.exists()
+    changed = copy.deepcopy(package_a)
+    changed["package_sha256"] = 123
+    destination = tmp_path / "numeric-package-hash.sqlite3"
+    with pytest.raises(ValueError):
+        AnnotationStore.consolidate_packages(destination, [changed, package_b], content, frame)
+    assert not destination.exists()
 
 
 def test_consolidation_rejects_duplicate_role_and_existing_destination(tmp_path):
