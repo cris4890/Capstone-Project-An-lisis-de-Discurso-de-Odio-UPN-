@@ -1,15 +1,29 @@
 """Registro local de anotación independiente y adjudicación con auditoría."""
 from contextlib import closing, contextmanager
+import hashlib
+import hmac
 import json
+import os
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
+import re
+import uuid
 
 import pandas as pd
 from sklearn.metrics import cohen_kappa_score, confusion_matrix
 from data_pipeline import clean_and_anonymize
 
 CLASSES = ["Odio", "Ofensivo", "Neutro"]
+PACKAGE_SCHEMA = "hatedetect.annotation-package.v1"
+PACKAGE_ROLES = {"A", "B"}
+PACKAGE_TOP_LEVEL = {
+    "schema", "corpus_sha256", "corpus_rows", "role", "evaluator_pseudonym",
+    "exported_at", "annotations", "package_sha256",
+}
+PACKAGE_ANNOTATION_FIELDS = {
+    "comment_id", "class", "target_group", "justification", "manual_version", "annotated_at",
+}
 
 
 class AnnotationStore:
@@ -28,6 +42,9 @@ class AnnotationStore:
             CREATE TABLE IF NOT EXISTS reviewer_roles (
                 corpus TEXT, role TEXT, evaluator TEXT, created TEXT,
                 PRIMARY KEY(corpus, role), UNIQUE(corpus, evaluator));
+            CREATE TABLE IF NOT EXISTS package_imports (
+                corpus TEXT, role TEXT, evaluator_pseudonym TEXT, package_sha256 TEXT, imported TEXT,
+                PRIMARY KEY(corpus, role), UNIQUE(corpus, package_sha256));
             """)
 
     @contextmanager
@@ -183,9 +200,177 @@ class AnnotationStore:
                 "distribution_a": pairs.label_a.value_counts().to_dict(),
                 "distribution_b": pairs.label_b.value_counts().to_dict()}
 
+    @staticmethod
+    def _canonical_json(value):
+        return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+
+    @classmethod
+    def package_bytes(cls, package):
+        """Serializa un paquete sin depender del orden de las claves."""
+        return cls._canonical_json(package)
+
+    def export_individual(self, corpus, role, frame):
+        """Exporta una revisión completa sin códigos privados ni texto del corpus."""
+        role = str(role).strip().upper()
+        if role not in PACKAGE_ROLES:
+            raise ValueError("Solo los roles A y B pueden exportar revisiones individuales.")
+        if not re.fullmatch(r"[0-9a-f]{64}", str(corpus)):
+            raise ValueError("El identificador del corpus debe ser su SHA-256 en minúsculas.")
+        units = frame["id_comentario"].astype(str).tolist() if "id_comentario" in frame else []
+        if len(units) != 72 or len(set(units)) != 72:
+            raise ValueError("El paquete requiere exactamente 72 IDs de comentario únicos.")
+        roles = self.reviewers(corpus)
+        evaluator = roles.get(role)
+        if not evaluator:
+            raise ValueError(f"El rol {role} no está registrado para este corpus.")
+        annotations, _ = self.tables(corpus)
+        own = annotations[annotations.evaluator == evaluator].copy()
+        if len(own) != 72 or set(own.unit.astype(str)) != set(units):
+            raise ValueError("La exportación exige una anotación del evaluador por cada uno de los 72 comentarios.")
+        if own.unit.astype(str).duplicated().any():
+            raise ValueError("La revisión contiene IDs duplicados.")
+        pseudonym = f"reviewer-{uuid.uuid4()}"
+        indexed = own.assign(unit=own.unit.astype(str)).set_index("unit")
+        records = []
+        for unit in units:
+            item = indexed.loc[unit]
+            records.append({
+                "comment_id": unit,
+                "class": item.label,
+                "target_group": item.target,
+                "justification": item.reason,
+                "manual_version": item.manual_version,
+                "annotated_at": item.created,
+            })
+        body = {
+            "schema": PACKAGE_SCHEMA,
+            "corpus_sha256": corpus,
+            "corpus_rows": 72,
+            "role": role,
+            "evaluator_pseudonym": pseudonym,
+            "exported_at": datetime.now(timezone.utc).isoformat(),
+            "annotations": records,
+        }
+        body["package_sha256"] = hashlib.sha256(self._canonical_json(body)).hexdigest()
+        return body
+
+    @classmethod
+    def _validated_package(cls, package, corpus_hash, expected_units):
+        if isinstance(package, (bytes, bytearray, str)):
+            try:
+                package = json.loads(package)
+            except (json.JSONDecodeError, UnicodeDecodeError, TypeError) as exc:
+                raise ValueError("El paquete no contiene JSON válido.") from exc
+        if not isinstance(package, dict) or set(package) != PACKAGE_TOP_LEVEL:
+            raise ValueError("El paquete tiene una estructura no permitida.")
+        supplied_digest = str(package.get("package_sha256", ""))
+        body = {key: value for key, value in package.items() if key != "package_sha256"}
+        actual_digest = hashlib.sha256(cls._canonical_json(body)).hexdigest()
+        if not hmac.compare_digest(supplied_digest, actual_digest):
+            raise ValueError("El paquete está corrupto o fue modificado.")
+        if package["schema"] != PACKAGE_SCHEMA:
+            raise ValueError("La versión del paquete no es compatible.")
+        if package["corpus_sha256"] != corpus_hash:
+            raise ValueError("El hash del corpus no coincide.")
+        if package["corpus_rows"] != 72 or len(expected_units) != 72:
+            raise ValueError("El corpus y el paquete deben contener exactamente 72 comentarios.")
+        role = package["role"]
+        if role not in PACKAGE_ROLES:
+            raise ValueError("El paquete declara un rol incorrecto; solo se aceptan A y B.")
+        pseudonym = package["evaluator_pseudonym"]
+        try:
+            if not str(pseudonym).startswith("reviewer-"):
+                raise ValueError
+            uuid.UUID(str(pseudonym).removeprefix("reviewer-"))
+        except (ValueError, AttributeError) as exc:
+            raise ValueError("El identificador seudónimo no es válido.") from exc
+        try:
+            exported = datetime.fromisoformat(package["exported_at"])
+        except (ValueError, TypeError) as exc:
+            raise ValueError("La fecha de exportación no es válida.") from exc
+        if exported.tzinfo is None:
+            raise ValueError("La fecha de exportación debe incluir zona horaria.")
+        records = package["annotations"]
+        if not isinstance(records, list) or len(records) != 72:
+            raise ValueError("El paquete debe contener exactamente 72 anotaciones.")
+        seen = set()
+        for record in records:
+            if not isinstance(record, dict) or set(record) != PACKAGE_ANNOTATION_FIELDS:
+                raise ValueError("Una anotación tiene campos faltantes o no permitidos.")
+            unit = str(record["comment_id"])
+            if unit in seen:
+                raise ValueError("El paquete contiene registros duplicados.")
+            seen.add(unit)
+            cls.validate(record["class"], record["target_group"], record["justification"])
+            if not str(record["manual_version"]).strip():
+                raise ValueError("La versión del manual es obligatoria.")
+            try:
+                annotated = datetime.fromisoformat(record["annotated_at"])
+            except (ValueError, TypeError) as exc:
+                raise ValueError("Una fecha de anotación no es válida.") from exc
+            if annotated.tzinfo is None:
+                raise ValueError("Las fechas de anotación deben incluir zona horaria.")
+        if seen != set(expected_units):
+            raise ValueError("Los IDs del paquete no coinciden con el CSV de 72 comentarios.")
+        return package
+
+    @classmethod
+    def consolidate_packages(cls, destination, packages, corpus_content, frame):
+        """Valida A+B y crea una base central nueva; nunca sobrescribe destinos."""
+        destination = Path(destination)
+        if destination.exists():
+            raise FileExistsError("La base central de destino ya existe; no se sobrescribe.")
+        corpus_hash = hashlib.sha256(corpus_content).hexdigest()
+        units = frame["id_comentario"].astype(str).tolist() if "id_comentario" in frame else []
+        if len(units) != 72 or len(set(units)) != 72:
+            raise ValueError("El CSV central debe contener exactamente 72 IDs únicos.")
+        validated = [cls._validated_package(item, corpus_hash, units) for item in packages]
+        if len(validated) != 2 or {item["role"] for item in validated} != PACKAGE_ROLES:
+            raise ValueError("Se requiere exactamente un paquete del rol A y uno del rol B.")
+        if len({item["evaluator_pseudonym"] for item in validated}) != 2:
+            raise ValueError("Cada rol debe pertenecer a un evaluador seudónimo distinto.")
+        if len({item["package_sha256"] for item in validated}) != 2:
+            raise ValueError("No se puede importar dos veces el mismo paquete.")
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            descriptor = os.open(destination, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            os.close(descriptor)
+        except FileExistsError as exc:
+            raise FileExistsError("La base central de destino ya existe; no se sobrescribe.") from exc
+        try:
+            store = cls(destination)
+            with store.connect() as conn:
+                now = datetime.now(timezone.utc).isoformat()
+                for package in validated:
+                    role, pseudonym = package["role"], package["evaluator_pseudonym"]
+                    conn.execute(
+                        "INSERT INTO reviewer_roles VALUES (?,?,?,?)", (corpus_hash, role, pseudonym, now)
+                    )
+                    conn.execute(
+                        "INSERT INTO package_imports VALUES (?,?,?,?,?)",
+                        (corpus_hash, role, pseudonym, package["package_sha256"], now),
+                    )
+                    conn.executemany(
+                        "INSERT INTO annotations VALUES (?,?,?,?,?,?,?,?)",
+                        [(corpus_hash, item["comment_id"], pseudonym, item["class"],
+                          clean_and_anonymize(item["target_group"]), clean_and_anonymize(item["justification"]),
+                          item["manual_version"], item["annotated_at"])
+                         for item in package["annotations"]],
+                    )
+        except Exception:
+            destination.unlink(missing_ok=True)
+            raise
+        return store
+
     def export(self, corpus, frame):
         annotations, decisions = self.tables(corpus)
         roles = self.reviewers(corpus)
+        with self.connect() as conn:
+            imported = conn.execute(
+                "SELECT count(*) FROM package_imports WHERE corpus=?", (corpus,)
+            ).fetchone()[0]
+        if imported and "E3" not in roles:
+            raise ValueError("La base consolidada requiere registrar al adjudicador E3 antes del CSV final.")
         if roles and not {"A", "B"}.issubset(roles):
             raise ValueError("La exportación requiere registrar los roles A y B.")
         pair = (roles["A"], roles["B"]) if roles else None

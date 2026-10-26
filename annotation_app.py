@@ -1,6 +1,7 @@
 """Herramienta interna de anotación, separada del sistema principal."""
 import hashlib
 import json
+import os
 from pathlib import Path
 import pandas as pd
 import streamlit as st
@@ -98,7 +99,8 @@ if not {"id_comentario", "texto_limpio"}.issubset(frame) or frame.id_comentario.
     st.stop()
 frame = frame[[c for c in SAFE_COLUMNS if c in frame]].copy()
 frame["texto_limpio"] = frame.texto_limpio.apply(clean_and_anonymize)
-store = AnnotationStore(ROOT/"private"/"annotations.sqlite3")
+database_path = Path(os.environ.get("HATEDETECT_ANNOTATION_DB", ROOT/"private"/"annotations.sqlite3"))
+store = AnnotationStore(database_path)
 role = st.selectbox("Rol", ["A", "B", "E3"], help="A: Jeanpierre; B: Erick; E3: Crisdel (adjudicación).")
 evaluator = st.text_input("Código privado de evaluador", type="password").strip()
 if not evaluator:
@@ -164,6 +166,18 @@ elif mode == "Adjudicar":
                     st.error(str(exc))
 else:
     roles = store.reviewers(corpus_hash)
+    if role in {"A", "B"}:
+        try:
+            package = store.export_individual(corpus_hash, role, frame)
+            st.download_button(
+                "Descargar paquete individual",
+                store.package_bytes(package),
+                file_name=f"anotaciones_{role}_{corpus_hash[:12]}.json",
+                mime="application/json",
+                help="No contiene el código privado ni los textos originales.",
+            )
+        except ValueError as exc:
+            st.info(str(exc))
     if {"A", "B"}.issubset(roles):
         completion = store.review_completion(corpus_hash, frame.id_comentario.tolist())
         if role in {"A", "B"} and not completion["complete"]:
